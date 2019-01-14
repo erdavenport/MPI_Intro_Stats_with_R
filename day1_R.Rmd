@@ -1,0 +1,27 @@
+---
+title: "MPI Stats with R"
+author: "Talia Karasov and Emily Davenport"
+date: "1/14/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Welcome - outline
+
+Welcome to the Intro Statistics with R workshop. 
+Our goal is to give you a crash course introduction into how to do basic statistics in the free and widely used statistical programming language R. 
+
+On Day 1, we will focus on learning R. 
+The learning objectives for today are:
+
+* Read data into and out of R
+* Assign variables
+* Learn data types
+* Learn to subset data
+* Calculate basic statistics on data
+* Make some plots
+* Load a library
+
