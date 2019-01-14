@@ -1,0 +1,1129 @@
+---
+title: "R & Statistics Day II 2019"
+author: "Talia_Karasov"
+date: "1/22/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+knitr::opts_chunk$set(echo = TRUE)
+options(repos=c(CRAN="goettingen"))
+#tidy.opts = list(width.cutoff = 60)
+
+```
+
+```{r}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+# General introduction: Basic Statistics in R
+
+We'll be using datasets that come with the R distribution. They are immediately available when you load R. Before we begin, I want to give a hat-tip to Jukka-Pekka Verta who first developed this course.
+
+**Exercise:** Confirm that you have access to the *iris* and *Puromycin* datasets.
+
+
+
+## Variable and analysis types
+
+### Dependent and independent variables
+
+"Dependent" variables are the outcomes of your experiments (i.e. "the thing you are working on"), and are also referred to as "response" variable. The "independent" variables are those you manipulate (i.e. "the thing that explains what you are working on"), these are also referred to as "predictor" or "explanatory" variables. 
+
+### Continuous vs. discrete variables 
+
+  * "Continuous" variables are those that, at least theoretically, can be measured with arbitrary precision. Height, weight and temperature are continuous variables.
+  * "Discrete" variables cannot be measured with arbitrary precision because the data takes distinct values. Gender is a discrete variable. Discrete data can be further classified into: **1.** "Categorical" data, which is often qualitative categories, with no relationship between the categories. This is also called "nominal". Gender is a discrete, nominal variable. **2.** "Ordinal" data, in which discrete values have an intrinsic ordering. An example of an ordinal variable is if you perform an experiment with "low", "medium", and "high" treatment levels. 
+
+### Variables vs analysis type
+
+Use the table below to determine the type of analysis that is appropriate for each types of variables (table not exclusive).
+
+Predictor variable        | Method   
+------------------------- | -----
+Continuous                | Regression   
+Categorical               | Analysis of variance (ANOVA)  
+Continuous & categorical	| Analysis of covariance (ANCOVA)  
+
+Response variable | Method
+----------------- | ------
+Continuous	      | Regression, ANOVA or ANCOVA 
+Proportion        | Logistic regression 
+Count	            | Log-linear models 
+
+## Summary statistics and data exploration
+
+Once you have data for an experiment you will want to look at multivariate summary statistics and visualise your data.
+R has several ways of doing this easily. **This is one of the most important steps in your analysis!** Many people jump into an analysis without looking at their data. Looking at summary statistics and more importantly plots can alert you to non-normality, missing data, improper data import or conversion, etc.
+
+### Summary statistics and plotting data
+
+Your analysis should always start with visualising your data and checking summary statistics. We will use the "iris" dataset for this exercise. 
+
+The most basic thing to do is to start with:
+
+```{r, echo=TRUE}
+head(iris)
+summary(iris)
+```
+
+The R function *aggregate* allows you to summarise your data with a specific function you decide.
+
+```{r, echo=TRUE}
+aggregate(iris[,1:4],by=list(Species=iris$Species),FUN=mean)
+aggregate(iris[,1:4],by=list(Species=iris$Species),FUN=sd)
+```
+
+**Exercise**: Make sure you understand what *aggregate* is doing. Use *?aggregate* to print out the help document.
+
+You also want to inspect your data with plots. The command we start with is called, unsurprisingly, *plot()*.
+
+```{r, echo=TRUE}
+plot(iris$Sepal.Width)
+```
+
+The previous line applies *plot* to the whole data, which is obviously not what you want. You want the sepal width by species.
+The *plot* parameter *par(mfrow=c(x,x)))* allows you to define an arbitrary number of plots you want to display in one window. For example, *c(1,3)* means that we want one row and three columns of plots.
+
+```{r, echo=TRUE}
+par(mfrow=c(1,3))
+plot(iris$Sepal.Width[which(iris$Species == 'setosa')])
+plot(iris$Sepal.Width[which(iris$Species == 'versicolor')])
+plot(iris$Sepal.Width[which(iris$Species == 'virginica')])
+```
+
+**Exercise**: Annotate the x- and y-axes of your plot correctly. Use *?plot* to find the options you need to specify.
+
+It's often helpful to inspect a boxplot instead of the raw data by index. Boxplots allow you to squeeze more data into a single plot.
+The tilde command ~ reads "as a function of". In the following plot we want sepal length to be plotted as a function of species.
+
+```{r, echo=TRUE}
+par(mfrow=c(1,2))
+boxplot(iris$Sepal.Length ~ iris$Species,main='Sepal length',las=2)
+boxplot(iris$Sepal.Width ~ iris$Species,main='Sepal width',las=2)
+```
+
+Using the basic plot command often means you need to do a lot of typing and that's where the package *ggplot2* comes in handy.
+Start by melting the dataframe to just three columns with *melt* from the package *reshape*.
+
+```{r, echo=TRUE}
+library(reshape)
+irisMelt = melt(iris)
+head(irisMelt)
+```
+
+**Exercise**: Make sure you understand what *melt* is doing to your data.
+
+Why do we manipulate our data with *melt*? Using *melt* and *ggplot* allows you to "wrap" your variables into categories and plot them all together in aestethically pleasing (and publication-quality) manner. *Ggplot* works a bit differently from most R functions. Think of *ggplot* as a figure where you add layers upon layers of different data. This takes some getting used to, but in the end makes the construction of complex figures much more straight forward. Your *ggplot* figure code is also easy to read.
+
+```{r, echo=TRUE}
+library(ggplot2)
+g = ggplot(irisMelt) # the first line initiates ggplot with your data frame
+g = g + geom_boxplot(aes(x=Species,y=value)) # second line defines that we want a boxplot, and which columns of the data frame to plot
+g = g + facet_wrap(~variable) # third line defines that we want to separate each measurement into its own bowplot
+g # last line executes the ggplot command
+```
+
+A cool feature of constructing *ggplots* element-by-element like this is that you can add more things to existing *ggplots*.
+Let's add all the raw data points on top of the boxplots.
+
+```{r, echo=TRUE}
+g = g + geom_jitter(aes(x=Species,y=value),cex=.5) # geom_jitter adds the datapoint and cex=.5 shrinks the datapoints by 50% relative to default
+g # and then plot the ggplot again
+```
+
+
+
+## Variance
+
+The level of variance in your data is so important that it deserves a special section in this work-though exercise. You calculate the variance for two main reasons:
+
+  * Establishing measures of unreliability (e.g. confidence intervals)
+  * Testing hypotheses
+
+Let's start by looking at the variation of sepal width in one of the species.
+
+```{r, echo=TRUE}
+par(mfrow=c(1,1))
+plot(iris$Sepal.Width[which(iris$Species == 'setosa')])
+```
+
+A fundamental measure of variation (scatter) in data are the **RESIDUALS**. Residuals are the deviation of measured values from the mean value, this is best explained by a plot.
+
+```{r, echo=TRUE}
+plot(iris$Sepal.Width[which(iris$Species == 'setosa')],pch=20)
+abline(h=mean(iris$Sepal.Width[which(iris$Species == 'setosa')]),col='green')
+for (i in 1:length(which(iris$Species == 'setosa'))){
+  meanWidth = mean(iris$Sepal.Width[which(iris$Species == 'setosa')])
+  observedWidth = iris$Sepal.Width[which(iris$Species == 'setosa')][i]
+  lines(c(i,i),c(meanWidth,observedWidth),col='red')
+}
+```
+
+An important property of residuals is that they all add up to zero, irrespective of the level of variability in the data.
+This means that we can't use the residuals as such to measure variability in the data.
+Instead, we can get rid of the minus signs in residuals by taking the square of them before adding up.
+This is the **SUM OF SQUARES** (SS), perhaps the most central quantity in statistics (Crawley 2015).
+Lets define a function to calculate the SS.
+
+```{r, echo=TRUE}
+SS = function(x){
+  observedValues = x # this is just to rename the "x" so that the calculation is clearer
+  meanValue = mean(observedValues)
+  squareResids = (observedValues - meanValue)^2
+  return(sum(squareResids))
+}
+
+SS(iris$Sepal.Width[which(iris$Species == 'setosa')])
+```
+
+There's also a shortcut way to calculate the SS, given in the function below.
+This is the form that is often used in text books when talking about correlation and regression (called the SSY).
+
+```{r, echo=TRUE}
+SSY = function(x){
+  observedValues = x
+  return(sum(observedValues^2) - sum(observedValues)^2/length(observedValues))
+}
+
+SSY(iris$Sepal.Width[which(iris$Species == 'setosa')])
+```
+
+Obviously the SS increases with more data, so we need to normalize the SS to the sample size.
+This still isn't good enough estimate of the variation in the data because we have we have already estimated one parameter from the data: the mean.
+This is why we use the **DEGREES of FREEDOM** (DoF) instead of the sample size to normalize the SS.
+The DoF is the calculated as the sample size n minus the number of parameters estimated.
+In our case we estimated one parameter (the mean) so DoF = n-1.
+Dividing the SS by DoF gives the **VARIANCE** of the data.
+Let's write a function to calculate the variance.
+
+```{r, echo=TRUE}
+variance = function(x){
+  sumOfSquares = SS(x)
+  DoF = length(x)-1
+  return(sumOfSquares/DoF)
+}
+
+variance(iris$Sepal.Width[which(iris$Species == 'setosa')])
+```
+
+**Exercise**: Check if our calculation of the variance was correct by comparing to the function *var* (which does the same thing we just worked through manually).
+
+OK, so now we have an intuition of what the concept of variance means. Here it's important to pause for a moment and recognise that what we have just calculated for the iris dataset is called the **sample variance**. So, what have we done? We have taken a sample of *Iris setosa* plants, measured their sepal widths and calculated the variance. Have we measured the sepal widths of **all** *Iris setosa* plants there exists? Obviously not, we took a sample. Therefore our measure of variance is a parameter that we estimated from the data. Now we come to two subtly different concepts that we often confuse with one another:
+
+  * The true variance of a population
+  * The estimated variance of a population (i.e. the sample variance)
+
+Both of these deal with estimating the variability or "spread" of your data around some mean value. We can establish the true variance of a variable only in the case when we measure every single case in a population (e.g. measuring the length of every single stickleback in the Neckar). Its obvious that in practice, we will never know the true variance of a variable. We therefore use the variance observed in a sample (the **sample variance**) as an **approximation** of the true variance. Because variance is an estimated parameter, it makes sense that its precision depends on the sample size. Consider the following plot. The code reads like this: "for increasing sample sizes of 3 to 30, draw a random sample from a normal distribution with a mean of 10 and a standard deviation of 2 (meaning a variance of 4) and calculate the variance of the random sample. Do this 30 times for each case of a particular sample size.
+
+```{r, echo=TRUE}
+plot(c(0,32),c(0,15),type='n',xlab='Sample size',ylab='Estimate of variance')
+abline(h=4,col='green')
+for (i in seq(3,31,2)){
+  for (n in 1:30){
+    x = rnorm(i,mean=10,sd=2)
+    points(i,var(x))
+  }
+}
+```
+
+The main message of this exercise is obvious when we look at the plot: **increasing your sample size will lead to a smaller sample variance** (which is an estimate of the true variance of the population - the green horizontal line). 
+
+
+
+
+
+## Standard error (of the mean) and Confidence Intervals
+
+Given that we are practically never able to measure all individuals in a population, our understanding of population parameters like the true mean and true variance will rely on sampling individuals from a population and calculating the sample mean and sample variance. In other words, we estimate the population parameters from the sample distribution. As in any case of sampling, the sample distributions are going to be inaccurate. It follows that our estimate for the true population mean or variance, the sample mean and the sample variance, are going to be inaccurate also. Ideally, we would like to quantify this inaccuracy. We use the concepts of **STANDARD ERROR** and **CONFIDENCE INTERVALS** to quantify the inaccuracy due to estimation of population parameters. 
+
+We can make two general predictions of the behaviour of the inaccuracy in parameter estimates.
+
+  * Unreliability towards a parameter estimate is positively correlated with variance.
+  * Unreliability towards a parameter estimate is negatively correlated with sample size.
+
+Consider for example the sample mean. This is an estimated parameter that approximates the true population mean. To quantify the unreliability of our calculation of the mean we use the following formula:
+
+  * SE = sqrt(variance/sample size)
+
+This quantity is called the **STANDARD ERROR of the MEAN**. Let's explore the SE with a plot.
+
+```{r, echo=TRUE}
+plot(c(0,32),c(0,5),type='n',xlab='Sample size',ylab='Standard Error of the Mean')
+for (i in seq(3,31,2)){
+  for (n in 1:30){
+    x = rnorm(i,mean=10,sd=2)
+    points(i,sqrt(var(x)/i))
+  }
+}
+```
+
+The plot represent individual SE estimates for the same true mean of 10, calculated thirty times for a given sample size. More samples we have, more precise our estimate of the mean becomes (the individual SE estimates give more similar results and the cloud of SE estimates group more closely towards zero). **The SE is always expressed in the same units as the measured variable.** This means that we can represent the mean and it's SE as a barplot with whiskers, like so:
+
+```{r, echo=TRUE}
+means = c()
+se = c()
+for (i in seq(3,61,2)){
+  x = rnorm(i,mean=10,sd=2)
+  means[as.character(i)] = mean(x)
+  se[as.character(i)] = sqrt(var(x)/i)
+}
+
+g = ggplot(data.frame(means=means,se=se))
+g = g + geom_bar(aes(y=means,x=seq(3,61,2)),stat='identity')
+g = g + ylim(0,14)
+g = g + geom_errorbar(aes(ymin=means-se,ymax=means+se,x=seq(3,61,2)))
+g = g + ylab('Mean +- 1 SE')
+g = g + xlab('Sample size')
+g
+```
+
+You should interpret the plot like this: Bars represent individual estimates for the population mean with a given sample size. Whiskers represent the +- 1 SE for that mean estimate. Notice how the mean estimates tend to converge towards the true mean (10) as sample size increases. Also, the SE gets smaller as sample size goes up. In order to interpret the difference between the true mean and the standard error we need to introduce a second concept: the **CONFIDENCE INTERVAL**.
+
+Look at the right-most bar on the barplot (N=61). Do the whiskers overlap with the true population mean of 10? Each of you will have a different answer because we all created independent random data.
+
+The whiskers represent 2*SE, meaning 1 SE below and above the sample mean. Because this is a standardized measure, it follows that the whiskers cover 68% of the probability distribution of the sample mean (34% on each side, the sample mean being in the middle of the distribution). There are two possibilities:
+
+  * True mean falls within this interval (within the whiskers)
+  * True mean does not fall within this interval (within the whiskers)
+
+This means that:
+
+  * If the true mean is within the interval represented buy 2*SE, it means that an event has occurred that had 68% probability.
+  * If the true mean is outside the interval (outside the whiskers), it means that an event has occurred that had 1-0.68=32% probability.
+
+In statistical language, we say that the whiskers form the **68% confidence interval of the sample mean**.
+
+**Exercise**: Can you think of a way to calculate the (approximate and/or precise) 95% confidence interval for the mean?
+
+**Tip**: The formal way of writing a confidence interval for a normally distributed variable is the following.
+
+  * CI(c) = Norm(alpha=1-c/2) * sqrt(variance/sample size)
+
+Where *c* is the desired level of confidence, e.g. 0.05 (5%), and *Norm* is the quantiles of the standard normal distribution (also called a **z-score**). Typical values of **z** for two-sided confidence intervals are given in the table below. You can also visit the wikipedia page https://en.wikipedia.org/wiki/Standard_score. Remember that *sqrt(variance/sample size)* is the standard error, so what we are essentially doing is scaling the standard error to achieve the desired level of confidence.
+
+c   | Norm(alpha=1-c/2)
+--- | ----------------
+99% | 2.576
+98% | 2.326
+95% | 1.96
+90% | 1.645
+68% | 1
+
+## The null hypothesis and the p-value
+
+In formal hypothesis testing, we start with a well-thought null hypothesis, which is assumed to be true, and an alternative hypothesis, for which we are attempting to validate using our data. The essential point is that a null hypothesis is falsifiable. We reject the null hypothesis (which in practice is often "*nothing varies*" or "*there is no difference between A and B*") when our data indicates that the null hypothesis is sufficiently unlikely. We base our decision each time on a value of a test statistics. If we observe a value of a test statistics that is very unlikely to be observed when the null hypothesis is *true*, we reject the null. In precise terms, **a p-value is an estimate of the probability of observing a value of a test statistics, or a value more extreme than this, when the null hypothesis is true**. You should memorise the last sentence. It is also important to memorise the following two things:
+
+  * A p-value is always associated with a value of a test statistics, and does not have a meaning without a test statistics.
+  * If our statistical test does not pass our significance threshold, we fail to reject our null hypothesis, we do not accept it.
+
+Whenever you encounter a p-value, you should know the underlying null expectation and the test statistics used to produce the p-value. This will clarify your logic and help you recognize errors in analysis as well as limits of the statistical tests.
+
+
+## Comparison of means
+
+### t-test
+
+The t-test is used to compare **two means**.
+The idea is simple: given what we know about the variances within two groups of samples, how likely is it that the samples were drawn from two populations with the same mean?
+
+One important assumpion of tests based on comparing two or more means is that the variance is equal in all compared samples.
+This is called **CONSTANCY of VARIANCE**.
+Why is this important? Because two samples can have the same mean but different variance.
+If you compare just the means you may conclude that the samples are identical.
+However, variance of the data is equally important in most contexts, so this conclusion would probably be wrong.
+In short: when the variances are different, we shouldn't make inferences by comparing the means because this would be a fundamentally wrong approach (Crawley 2015).
+Therefore, if you are comparing means you need to make sure that the variances are identical.
+
+Now let's just quickly compare the variance of sepal widths in the three iris species.
+
+```{r, echo=TRUE}
+var(iris$Sepal.Width[which(iris$Species == 'setosa')])
+var(iris$Sepal.Width[which(iris$Species == 'versicolor')])
+var(iris$Sepal.Width[which(iris$Species == 'virginica')])
+```
+
+We can test for the equality of the variances so:
+
+```{r, echo=TRUE}
+var.test(iris$Sepal.Width[which(iris$Species == 'setosa')],iris$Sepal.Width[which(iris$Species == 'versicolor')])
+var.test(iris$Sepal.Width[which(iris$Species == 'setosa')],iris$Sepal.Width[which(iris$Species == 'virginica')])
+var.test(iris$Sepal.Width[which(iris$Species == 'virginica')],iris$Sepal.Width[which(iris$Species == 'versicolor')])
+```
+
+Equally important is visualising the data with box plots.
+
+```{r, echo=TRUE}
+boxplot(iris$Sepal.Width[which(iris$Species=='virginica')],iris$Sepal.Width[which(iris$Species=='versicolor')])
+```
+
+In conclusion: all looks good for the iris dataset and we can continue with the exercise.
+
+Now we have established that the variances in sepal width are similar in different species; comparison of their mean sepal widths is therefore justified.
+In practise our data are rarely perfect and formal test of equality of variance often reject the null hypothesis that variances are equal (even when the variances are only slightly different).
+We therefore need to consider our motivations for the test and think hard whether comparing the means is appropriate.
+Often we still want to do the comparison.
+It is therefore quite convenient that the default t-test in R performs a **Welch Approximate t-test**, which is robust against deviations from equity of variances.
+The actual test for comparing two means is straighforward to execute:
+
+```{r, echo=TRUE}
+t.test(iris$Sepal.Width[which(iris$Species=='versicolor')],iris$Sepal.Width[which(iris$Species=='virginica')])
+```
+
+Remember that even the Welch test assumes that the two compared samples are **independent** and their **errors are normally distributed**. 
+If we are certain that the variances are equal we can call the classical **Student's t-test** so:
+
+```{r, echo=TRUE}
+t.test(iris$Sepal.Width[which(iris$Species=='versicolor')],iris$Sepal.Width[which(iris$Species=='virginica')],var.equal=T)
+```
+
+As you can see from the output it gives an (nearly) equal result to the Welch test.
+
+**Exercise**: Spot the differences in the outputs of Student's and Welch's t-tests.
+
+#### Paired t-test
+
+In the case where the compared variables are drawn from paired samples (i.e. samples that are clearly related to each other in one way of the other),
+we use the **paired t-test** (using the paired test is when possible is always recommended because it is much more powerful).
+
+For now we will compare sepal width and sepal lengths from the same samples. 
+
+```{r, echo=TRUE}
+boxplot(iris$Sepal.Width[which(iris$Species=='versicolor')],iris$Sepal.Length[which(iris$Species=='versicolor')])
+t.test(iris$Sepal.Width[which(iris$Species=='versicolor')],iris$Sepal.Length[which(iris$Species=='versicolor')],paired=T)
+```
+
+#### Non-parametric t-test
+
+In case where the errors are non-normal we can use the non-parametric **Wilcoxon rank sum test**.
+
+```{r, echo=TRUE}
+wilcox.test(iris$Sepal.Width[which(iris$Species=='versicolor')],iris$Sepal.Width[which(iris$Species=='virginica')])
+```
+
+Remember that **with normal data, the non-parametric test is ~95% as powerful**. On the other hand, when data is non-normal (for example because of strong presence of outliers) the non-parametric test is much more powerful than the parametric test.
+
+### ANOVA
+
+You use ANOVA when your explanatory variable(s) is categorical and you're interested in the difference in mean values between categories.
+You can think of ANOVA as a case of t-test when you have more than 2 categories.
+
+Let's start by looking at the iris data again.
+
+```{r, echo=TRUE}
+library(reshape)
+
+library(ggplot2)
+
+irisMelt = melt(iris)
+head(irisMelt)
+
+g = ggplot(irisMelt) 
+g = g + geom_boxplot(aes(x=Species,y=value)) 
+g = g + facet_wrap(~variable) 
+g
+```
+
+The fundamental aspect of ANOVA is that **you use the variance within versus between classes to compare the means**.
+If that sounds counterintuitive the following plot should make things clearer.
+Let's look at sepal length in the **whole data** versus the mean of sepal lengths.
+
+```{r, echo=TRUE}
+g = ggplot(iris) 
+g = g + geom_point(aes(x=1:length(Sepal.Length),y=Sepal.Length)) 
+g = g + geom_hline(aes(yintercept=mean(Sepal.Length)),colour='green')
+g
+```
+
+Now lets add the **residuals**.
+I've broken down the command to multiple lines so that its easier to see whats going on.
+
+```{r, echo=TRUE}
+g = g + geom_segment(aes(
+  x=1:length(Sepal.Length),
+  xend=1:length(Sepal.Length),
+  y=Sepal.Length,
+  yend=rep(mean(Sepal.Length),times=length(Sepal.Length)))
+  ,colour='red')
+g
+```
+
+The essence of ANOVA is that **we compare the residuals relative to the category means and the residuals relative to the global mean** of the data set.
+Lets first plot the category (species) means to the plot instead of the global mean.
+
+```{r, echo=TRUE}
+p = ggplot(iris) 
+p = p + geom_point(aes(x=1:length(Sepal.Length),y=Sepal.Length)) 
+p = p + geom_hline(aes(yintercept=mean(Sepal.Length[which(Species=='setosa')])),colour='green')
+p = p + geom_hline(aes(yintercept=mean(Sepal.Length[which(Species=='versicolor')])),colour='blue')
+p = p + geom_hline(aes(yintercept=mean(Sepal.Length[which(Species=='virginica')])),colour='purple')
+p
+```
+
+Now lets add the residuals again one species at a time.
+
+```{r, echo=TRUE}
+p = p + geom_segment(data=iris[which(iris$Species=='setosa'),], # we want to plot only the setosa residuals so we specify that to geom_segment
+  aes(
+  x=which(iris$Species=='setosa'), # the x-cordinates of the setosa data points on our plot 
+  xend=which(iris$Species=='setosa'), # the x-cordinates of the setosa data points on our plot
+  y=Sepal.Length, # y-start of our lines are in data points of sepal lengths in setosa 
+  yend=rep(mean(Sepal.Length),times=length(Sepal.Length))), # y-end of our lines are always at the mean sepal length in setosa
+  colour='green',alpha=.5)
+p # there's the residuals for setosa
+
+p = p + geom_segment(data=iris[which(iris$Species=='versicolor'),],
+  aes(
+  x=which(iris$Species=='versicolor'),
+  xend=which(iris$Species=='versicolor'),
+  y=Sepal.Length[which(Species=='versicolor')],
+  yend=rep(mean(Sepal.Length[which(Species=='versicolor')]),times=length(which(Species=='versicolor')))),
+  colour='blue',alpha=.5)
+p # residuals for versicolor
+
+p = p + geom_segment(data=iris[which(iris$Species=='virginica'),],
+  aes(
+  x=which(iris$Species=='virginica'),
+  xend=which(iris$Species=='virginica'),
+  y=Sepal.Length,
+  yend=rep(mean(Sepal.Length),times=length(Sepal.Length))),
+  colour='purple',alpha=.5)
+p # residuals for virginica
+```
+
+**Here's the catch** -- if mean sepal lengths in the three species were the same, how would the residual lines we just draw (green, blue and purple) would compare to the residual lines we draw previously to the global mean (red)?
+The answer is: if the species means were in the same place as the global means, the group residuals would be the same length as the global residuals.
+This is in essence what we are testing when we do ANOVA.
+
+Next comes a tiny bit of R code tips.
+You migth have noticed that I names the first plot as "g" and the second as "p" -- there's a reason for that.
+We can plot multiple *ggplots* in the same window by using the package *grid*.
+Let's compare the two plots side-by-side.
+
+```{r, echo=TRUE}
+library(grid)
+pushViewport(viewport(layout = grid.layout(1,2)))
+print(g,vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(p,vp = viewport(layout.pos.row = 1, layout.pos.col = 2))
+```
+
+### Performing ANOVA
+
+Ok, the last section should have built an intuitive understanding of the way how ANOVA works.
+
+Lets move on to do the actual test.
+
+```{r, echo=TRUE}
+summary(aov(iris$Sepal.Length ~ iris$Species))
+```
+
+The output reads:
+  
+  * Df = Degrees of freedom
+  * Sum Sq = residuals
+  * Mean Sq = variance
+  * F value = variance(treatment) / variance(error)  ==  explained variance divided by unexplained variance  ==  signal-to-noise ratio
+  * Pr(>F) = p-value associated with the F-value
+
+Let's visualise the means like we were producing a figure for a journal submission.
+
+```{r, echo=TRUE}
+g = ggplot(iris)
+g = g + geom_bar(aes(y=Sepal.Length,x=Species),stat='identity') 
+g
+```
+
+Remember that our estimate of the mean is drawn from a sampling population, therefore, it will contain some level of uncertainty. Usually with barplot, if we're plotting a mean, we want to represent the parameter uncertainty in our plot. Most usual case is to plot the SE of the mean as whiskers. You can also use the 95% Confidence Interval if you will. Let's plot the SE for now.
+
+First we need to calculate the SE, remember that to do this we need the variance and the sample size. 
+
+```{r, echo=TRUE}
+variances = aggregate(iris$Sepal.Length,by=list(Species=iris$Species),FUN=var)
+sampleSizes = aggregate(iris$Species,by=list(Species=iris$Species),FUN=length)
+
+se = sqrt(variances$x/sampleSizes$x)
+means = aggregate(iris[,1:4],by=list(Species=iris$Species),FUN=mean)$Sepal.Length
+anovaPlot = data.frame(means=means,se=se,species=levels(iris$Species))
+```
+
+Now we're ready to include the error bar in the plot.
+
+```{r, echo=TRUE}
+g = ggplot(anovaPlot)
+g = g + geom_bar(aes(y=means,x=species),stat='identity') 
+g = g + geom_errorbar(aes(ymin=means-se,ymax=means+se,x=c(1:3)))
+g
+```
+
+The second error-bar option we will try is plotting the standard error of the ANOVA model. This means that we want to plot the error bars as a function of the pooled error variance we used to test the differences in the means i.e. the residual variance not explained by the model (be sure to state this in the figure legend!). We can get the pooled error variance from our ANOVA output by remembering that Mean Sq = variance.
+
+**Exercise**: Try to spot the residual variance of the model in the table below.
+
+```{r, echo=TRUE}
+summary(aov(iris$Sepal.Length ~ iris$Species))
+sampleSizes = aggregate(iris$Species,by=list(Species=iris$Species),FUN=length)
+
+se = sqrt(0.265/sampleSizes$x)
+means = aggregate(iris[,1:4],by=list(Species=iris$Species),FUN=mean)$Sepal.Length
+anovaPlot = data.frame(means=means,se=se,species=levels(iris$Species))
+
+g = ggplot(anovaPlot)
+g = g + geom_bar(aes(y=means,x=species),stat='identity') 
+g = g + geom_errorbar(aes(ymin=means-se,ymax=means+se,x=c(1:3)))
+g
+```
+
+The *summary* command gives a very hypothesis-testing driven output (concentrated on the p-value).
+It's equally informative to look at **effect sizes** (differences of means in measured units) using the *summary.lm* function.
+In addition, the summary output tells us that there is AT LEAST ONE PAIR of groups that differ in means, but it doesn't tell us which pair.
+To know that we will run a couple more commands (in jargon **POST-HOC tests**), the first one:
+
+```{r, echo=TRUE}
+summary.lm(aov(iris$Sepal.Length ~ iris$Species))
+```
+
+The output is at first quite cryptic but here's how to read it in our case:
+
+  * (Intercept) --- mean of our first group (setosa) (in units we measured) [to find out the setosa was the first group in our mode run "levels(iris$Species)"]
+  * iris$Speciesversicolor --- difference of versicolor mean from the setosa mean
+  * iris$Speciesvirginica --- difference of virginica mean from the setosa mean
+
+All following columns follow logically from this:
+
+  * first row of Std error is the standard error of the mean in setosa
+  * second and third rows are the standard error of the differences in means between the respective groups and setosa
+  * t value of the first row is the test statistics associated with observing a mean of setosa different from 0
+  * t value of the second and third rows are test statistics associated with the differences in respective group means from setosa mean
+  *  last column gives the p-values associated with the test statistics
+
+R-squared indicates that ~62% of the variability in the data can be accounted by differences in species means. Notice that the last line gives the overall ANOVA test statistics (F), so we wouldn't actually even need to run the simple *summary* command in the first place.
+
+Ok so now we know almost everything there is to know about this ANOVA.
+We still don't know is versicolor and virginica means differ (after all, the last output was relative to setosa mean). Let's conduct a **Tukey's Honest Significant Difference (HSD)** test to know that last bit of information.
+
+```{r, echo=TRUE}
+TukeyHSD(aov(iris$Sepal.Length ~ iris$Species))
+```
+
+There we are, all the differences in means are given in the *diff* column.
+
+  * lwr and upr are the 95% confidence intervals
+  * the last column is the p-value (this time adjusted for multiple testing, not in the case of summary.lm)
+
+
+**Exercise**: another option is to use the *asbio* package and run the same test with the command 
+  
+  * pairw.anova(iris[,'Sepal.Length'],iris[,'Species'])
+
+The output is a bit more friendly, can you spot the difference between the output of *TukeyHSD* and *pairw.anova*?
+
+### Assumptions
+
+We still need to check the assumptions -- **normally distributed errors** and **equal variance**.
+The plots are used to check for the following assumptions:
+
+  * Upper left - constancy of variance
+  * Lower left - constancy of variance (alternative scale)
+  * Upper right - normally distributed errors
+  * Lower right - highly influential data points
+
+```{r, echo=TRUE}
+par(mfrow=c(2,2))
+plot(aov(iris$Sepal.Length ~ iris$Species))
+```
+
+### Non-parametric ANOVA
+
+There are many options to perform a non-parametric version of ANOVA. These include the **Kruskal Wallis test** and the **Mann-Whitney U test** (aka Wilcoxon rank sum test).
+You perform a non-parametric ANOVA if your data is not normally distributed.
+
+**Exercise**: use *?kuskal.test* and *?wilcox.test* to get familiar with non-parametric options for ANOVA. Another good resource is the Quick-R website: http://www.statmethods.net/stats/nonparametric.html
+
+If non-parametric tests have fewer assumptions than parametric tests, why don't we use them all the time? Because they are far less powerful when data actually *is* normally distributed. Non-parametric tests are not affected by outliers because it doesn't matter how far they lie, but at the same time, extreme (but still normally distributed) values cannot add to the detectable signal. What this means is that you need more data for a similar p-value. As with an ANOVA, the null expectation for both *kuskal.test* and *wilcox.test* is that the means are all the same, so a significant result only says that at least one group is different than one other group.
+
+
+## Comparing two quantitative variables
+
+### Visualising the data
+
+Often our experiments are such that we are interested in the relationships between two continuous variables. Let's visualize the relationship between sepal and petal lengths. Both of these variables are continuous, which means that the appropriate statistical tools to analyse their relationship are **CORRELATION** and **REGRESSION**.
+
+First let's plot the two variable using the original data frame and the basic *plot* command.
+
+```{r, echo=TRUE}
+par(mfrow=c(1,3))
+plot(iris$Sepal.Length[which(iris$Species=='setosa')],iris$Petal.Length[which(iris$Species=='setosa')])
+plot(iris$Sepal.Length[which(iris$Species=='versicolor')],iris$Petal.Length[which(iris$Species=='versicolor')])
+plot(iris$Sepal.Length[which(iris$Species=='virginica')],iris$Petal.Length[which(iris$Species=='virginica')])
+```
+
+The basic plot command produces quite nasty looking plots and you would need to specify for example the x- and y-axis labels to make it look nicer. Also note that the x- and y-axis scales are different in all three subplots -- this may be misleading and doesn't produce a very good overall representation of the whole data. Using *ggplot* helps with these issues, so lets use it to look at the relationship between sepal and petal lengths. In our case it's most convenient to use the original data frame where sepal and petal lengths are in different columns.
+
+```{r, echo=TRUE}
+g = ggplot(iris)
+g = g + geom_point(aes(Petal.Length,Sepal.Length))
+g = g + facet_wrap(~Species)
+g
+```
+
+Note how using *facet_wrap* forces the x- and y-axis scales to remain the same in all subplots.
+This gives you a better sence of scale of the data and forces good habits.
+You also save a lot of typing and reduce the possibilities for bugs compared to the basic *plot* command.
+
+
+
+
+
+## Correlation
+
+Correlation measures the independence vs. dependence of two continuous variables, and the direction and degree to which two variables change together - correlation analysis will tell you if one variable will tend to increase or decrease as the other variable increases or decreases. Remember that correlation analysis does not test causal hypotheses. 
+
+To calculate the correlation between petal and sepal lenghts, all we need to do is:
+
+```{r, echo=TRUE}
+cor(iris$Sepal.Length[which(iris$Species=='setosa')],iris$Petal.Length[which(iris$Species=='setosa')])
+```
+
+So what does the value of correlation coefficient (rho) mean? Correlation considers the variance in *x*, the variance in *y* and their covariance (how the two co-vary). Values of rho always vary between -1 and 1. Values near -1 indicate strong negative correlation, while values near 1 indicate strong positive correlation. When x and y are uncorrelated their covariance (and thus rho) is 0. **Rho = 0 indicates a lack of linear association between the two variables.** Think of the lack of correlation as a plot of the two variables without any kind of structure -- just a random cloud of points. Correlation on the other hand means that there is a structure to that cloud of points -- maybe it's stretched on the diagonal and the could is pointing to upper right, in which case the correlation would be positive.
+
+The associated p-value of a correlation can be calculated so:
+
+```{r, echo=TRUE}
+cor.test(iris$Sepal.Length[which(iris$Species=='setosa')],iris$Petal.Length[which(iris$Species=='setosa')])
+```
+
+Note that the Pearson's correlation test assumes that *x* and *y* are normally distributed. There's also the non-parametric version of Spearman's rank correlation (in case of non-normality).
+
+```{r, echo=TRUE}
+cor.test(iris$Sepal.Length[which(iris$Species=='setosa')],iris$Petal.Length[which(iris$Species=='setosa')],method='spearman')
+```
+
+**Exercise**: Explore the correlation of sepal and petal lengths in each three species of the *iris* dataset. Which species shows the most and which shows the least level of correlation? How come can we use Spearman's correlation test for non-normal data?
+
+
+## Regression
+
+The essence of regression is to define a statistical model that describes the relationship between the response variable and the explanatory variable(s). You perform regression when you want to explain variation in the response variable (y) with variation in the explanatory variable (x).
+The simplest model of all is the linear model.
+
+**y = a + bx**
+
+This means that *y* is a product of a baseline value (*a*) and the value of *x* times a constant *b*.
+
+We therefore need to estimate at least two parameters:
+
+  * *a* (the intersect i.e. the value of y when x=0)
+  * *b* (the slope i.e. the change in y divided by the change in x that brought about it)
+
+**Exercise**: Discuss the differences of *correlation* and *regression*.
+
+The *correlation* between petal and sepal lengths in setosa-species was not that good, so let's use the same variables in the virginica-species instead for our exercises. As usual, we begin our analysis by visualising the data.
+
+```{r, echo=TRUE}
+par(mfrow=c(1,1))
+plot(iris$Sepal.Length[which(iris$Species=='virginica')],iris$Petal.Length[which(iris$Species=='virginica')],pch=20)
+```
+
+### Simplest linear model
+
+We want to explain variation in petal length by variation in sepal length. We do this by defining a *linear model*. To estimate (the simplest) linear model between petal and sepal lengths we use the *lm* function.
+
+```{r, echo=TRUE}
+fit  = lm(iris$Petal.Length[which(iris$Species=='virginica')] ~ iris$Sepal.Length[which(iris$Species=='virginica')])
+fit
+```
+
+**Exercise**: Read aloud the *lm* function call (with  your own words) we just executed.
+
+Now let's add the estimated regression model to the plot.
+
+```{r, echo=TRUE}
+par(mfrow=c(1,1))
+plot(iris$Sepal.Length[which(iris$Species=='virginica')],iris$Petal.Length[which(iris$Species=='virginica')],pch=20)
+fit  = lm(iris$Petal.Length[which(iris$Species=='virginica')] ~ iris$Sepal.Length[which(iris$Species=='virginica')])
+fit
+abline(fit,col='green')
+```
+
+### Residuals of the model
+
+The coefficients *a* and *b* are the maximum likelihood estimates for the intercept and the slope. No model is perfect, and there will always be a difference between the observed y-values and the y-values the model predicts given a certain x-value. The differences between the observed and fitted y-values are the **RESIDUALS** (of the model).
+Let's add these residuals to our plot.
+
+```{r, echo=TRUE}
+par(mfrow=c(1,1))
+plot(iris$Sepal.Length[which(iris$Species=='virginica')],iris$Petal.Length[which(iris$Species=='virginica')],pch=20)
+fit  = lm(iris$Petal.Length[which(iris$Species=='virginica')] ~ iris$Sepal.Length[which(iris$Species=='virginica')])
+fit
+abline(fit,col='green')
+
+fittedValues = predict(fit) # the fitted values will be a vector the same length of your original data you passed to the lm function
+
+fittedValues # these are the predicted values of y for a given x
+
+for (i in 1:length(which(iris$Species=='virginica'))){
+  observedValueY = iris$Petal.Length[which(iris$Species=='virginica')][i]
+  observedValueX = iris$Sepal.Length[which(iris$Species=='virginica')][i]
+  lines(c(observedValueX,observedValueX),c(observedValueY,fittedValues[i]),col='red')
+}
+```
+
+The residuals describe the goodness-of-fit of the linear model. Our maximum likelihood model is defined as the model that minimises the sum of squares of the residuals. You can intuitively understand how this is done if you consider the following: we know that the best fit regression line must pass through the central point of the cloud of points, which is situated at mean(x), mean(y). Finding the maximum likelihood line is analogous to pivoting the regression line around the central point until the sum of the residual lines is at its minimum.
+
+### Standard errors of the parameters
+
+Finding the best values for *a* and *b* so that the residuals are minimized is however just part of the story. To know how well our model describes the relationship between x and y we need to measure the reliability of these parameter estimates. In other words, we need to know the standard errors of *a* and *b*. We'll use a visual exercise to build our intuition of what this means.
+
+First, let's start by considering *b*. We need to split the orginal data into two so that we can see what's involved.
+
+```{r, echo=TRUE}
+sepalLengths = iris$Sepal.Length[which(iris$Species=='virginica')] 
+largeSpread = which(sepalLengths > 7 | sepalLengths < 6)
+smallSpread = which(sepalLengths < 7 & sepalLengths > 6)
+```
+
+**Exercise**: Do you understand what we had just done? Explain this to the person sitting next to you.
+
+From the following plot it will be obvious to see how that estimate of *b* depends on the spread of the explanatory variable (x).
+
+```{r, echo=TRUE}
+par(mfrow=c(1,3))
+plot(iris$Petal.Length[which(iris$Species=='virginica')][largeSpread]~iris$Sepal.Length[which(iris$Species=='virginica')][largeSpread],pch=20,xlim=c(5,8),ylim=c(4,7),ylab='Petal length',xlab='Sepal length',main='Large spread of x')
+abline(lm(iris$Petal.Length[which(iris$Species=='virginica')][largeSpread]~iris$Sepal.Length[which(iris$Species=='virginica')][largeSpread]),col='green')
+plot(iris$Petal.Length[which(iris$Species=='virginica')][smallSpread]~iris$Sepal.Length[which(iris$Species=='virginica')][smallSpread],pch=20,xlim=c(5,8),ylim=c(4,7),ylab='Petal length',xlab='Sepal length',main='Small spread of x')
+abline(lm(iris$Petal.Length[which(iris$Species=='virginica')][smallSpread]~iris$Sepal.Length[which(iris$Species=='virginica')][smallSpread]),col='green')
+plot(iris$Petal.Length[which(iris$Species=='virginica')] ~ iris$Sepal.Length[which(iris$Species=='virginica')],pch=20,xlim=c(5,8),ylim=c(4,7),ylab='Petal length',xlab='Sepal length',main='Original data')
+abline(fit,col='green')
+```
+
+It's obvious to see what's going on: **having a large spread of x-values gives a better estimate of the slope** (closer to the model with all data).
+
+The confidence we have in the parameter *a* similarly depends on x, but on the distance of x-values from the intercept.
+
+```{r, echo=TRUE}
+sepalLengths = iris$Sepal.Length[which(iris$Species=='virginica')] 
+largeSepal = which(sepalLengths > 6.5)
+smallSepal = which(sepalLengths < 6.5)
+
+par(mfrow=c(1,3))
+plot(iris$Petal.Length[which(iris$Species=='virginica')][largeSepal]~iris$Sepal.Length[which(iris$Species=='virginica')][largeSepal],pch=20,xlim=c(5,8),ylim=c(4,7),ylab='Petal length',xlab='Sepal length',main='Large values of x')
+abline(lm(iris$Petal.Length[which(iris$Species=='virginica')][largeSepal]~iris$Sepal.Length[which(iris$Species=='virginica')][largeSepal]),col='green')
+plot(iris$Petal.Length[which(iris$Species=='virginica')][smallSepal]~iris$Sepal.Length[which(iris$Species=='virginica')][smallSepal],pch=20,xlim=c(5,8),ylim=c(4,7),ylab='Petal length',xlab='Sepal length',main='Small values of x')
+abline(lm(iris$Petal.Length[which(iris$Species=='virginica')][smallSepal]~iris$Sepal.Length[which(iris$Species=='virginica')][smallSepal]),col='green')
+plot(iris$Petal.Length[which(iris$Species=='virginica')] ~ iris$Sepal.Length[which(iris$Species=='virginica')],pch=20,xlim=c(5,8),ylim=c(4,7),ylab='Petal length',xlab='Sepal length',main='Original data')
+abline(fit,col='green')
+```
+
+Again: **having x-values close to the intercept will increase the precision of the estimate for a** (it will be more similar to the intercept of the model estimated from all data). These above behaviours of *a* and *b* are summarized by their standard errors (you can use any statistics text book to look up the maths of this).
+
+### Model testing
+
+Now we are ready to interpret the results of our very first regression analysis.
+
+```{r, echo=TRUE}
+summary(fit)
+```
+
+You can also have a look at the sum of squares assigned to the model and the residuals so:
+
+```{r, echo=TRUE}
+summary.aov(fit)
+```
+
+To understand the *aov* table you need to know the following:
+
+  * "Df" == Degrees of Freedom
+  * "Mean sq" == variance
+  * "F value" == variance(model) / variance(residuals)  ==  explained variance / unexplained variance  ==  signal-to-noise ratio
+  * "Pr(>F)" == the probability of observing an F value as large or larger by change given that the null hypothesis was true (the p-value)
+
+**Exercise**: Interpret the result of our regression analysis. Describe the results to the person sitting next to you (whats our conclusion, which parameters are significative and which are not, how good do the parameter estimates look like).
+
+### Fit of the model
+
+An important measure to consider is the degree of fit of the model.
+For this exercise, let's add some noise into the petal lengths so that the spread of the data is larger.
+
+```{r, echo=TRUE}
+noisyData = iris[which(iris$Species=='virginica'),] # initiate the data frame with virginica data
+
+noisyData$Petal.Length = noisyData$Petal.Length + rnorm(length(noisyData$Petal.Length),sd=.5) # add random numbers to petal length drawn from a normal distribution with a mean of 0 and sd=.5
+```
+
+Compare the regression models for the two datasets:
+
+```{r, echo=TRUE}
+fit1 = lm(iris$Petal.Length[which(iris$Species=='virginica')] ~ iris$Sepal.Length[which(iris$Species=='virginica')])
+
+fit2 = lm(noisyData$Petal.Length ~ noisyData$Sepal.Length)
+
+par(mfrow=c(1,2))
+plot(iris$Petal.Length[which(iris$Species=='virginica')] ~ iris$Sepal.Length[which(iris$Species=='virginica')],pch=20,xlim=c(5,8),ylim=c(3,8),ylab='Petal length',xlab='Sepal length',main='original')
+abline(fit1, col='green')
+plot(noisyData$Petal.Length ~ noisyData$Sepal.Length,pch=20,xlim=c(5,8),ylim=c(3,8),ylab='Petal length',xlab='Sepal length',main='with noise')
+abline(fit2, col='green')
+```
+
+Compare the R-squared terms of the two models.
+The R-squared tells you how much of variation in *y* is explained by variation in *x*.
+
+```{r, echo=TRUE}
+summary(fit1)
+summary(fit2)
+```
+
+### Assumptions
+
+Regression assumes **constancy of variance** and **normality of errors**. Plotting the linear model allows visual inspection of these assumptions.
+
+```{r, echo=TRUE}
+par(mfrow=c(2,2))
+plot(fit)
+```
+
+The top row is the most important. You want the residuals vs fitted values to be a random cloud of points without any tendency to increase or decrease. The q-q plot should be a straight line if the model residuals are normally distributed. The scale-location plot is like the first plot but on another scale - you don't want the spread on y-axis to change as a function of x-values. The residual vs leverage highlights the influence of single datapoints on parameter estimates - ideally you want all the points inside the dashed lines.
+
+### Non-linear response variable
+
+What if the response is non-linear? In biology we often encounter relationships that would be best described by a **curved line**. Lets have a look at another dataset.
+
+```{r, echo=TRUE}
+head(Puromycin)
+summary(Puromycin)
+par(mfrow=c(1,2))
+plot(Puromycin$rate~Puromycin$conc)
+plot(Puromycin$rate~Puromycin$conc,col=as.factor(Puromycin$state))
+```
+
+**Exercise**: Discuss whether the response variable is linear or not and what could be done to render it linear.
+
+A simple linear model would probably be a bad fit to the data but a log-transformation might work. Remember that after transformation all variables of our model are still linear -- we use the same y = a + bx form we did previously and the *lm* function (you can look up the mathematical proof for this in any stats text book).
+
+```{r, echo=TRUE}
+fitLinear = lm(Puromycin$rate~Puromycin$conc)
+
+fitLog = lm(Puromycin$rate~log(Puromycin$conc))
+
+par(mfrow=c(1,2))
+plot(Puromycin$rate~Puromycin$conc,pch=20)
+abline(fitLinear,col='green')
+plot(Puromycin$rate~log(Puromycin$conc),pch=20)
+abline(fitLog,col='green')
+```
+
+Compare the R-squared values of the linear models with non-transformed and transformed y-values.
+
+```{r, echo=TRUE}
+summary(fitLinear)
+summary(fitLog)
+```
+
+Transforming the explanatory variable (concentration) with a log function produces a good fit, so lets check the assumptions.
+
+```{r, echo=TRUE}
+par(mfrow=c(2,2))
+plot(lm(Puromycin$rate~log(Puromycin$conc)))
+```
+
+The transformation-approach in this case isn't so bad.
+Aspect you need to look out for in this type of data is the non-constancy of variance.
+In this data set the problem isn't so bad, probably because we have so few data points (so that variance is automatically high even for low y-values).
+
+To plot curved regression lines to the original data (and not the log-transformed data) you need to predict the y-values by hand, i.e. we need to predict the y values based on our non-linear model of y ~ log(x) ==> y = a + b*log(x).
+
+```{r, echo=TRUE}
+xv = seq(0,1.2,0.01) # range of x-values 
+
+a = coef(fitLog)[1] # coefficient a
+
+b = coef(fitLog)[2] # coefficient b
+
+yv = a + b*log(xv) # predicted y-values
+
+par(mfrow=c(1,1))
+plot(Puromycin$rate~Puromycin$conc,pch=20)
+lines(xv,yv,col='green')
+```
+
+### Polynomial regression
+
+Now we're pretty sure that the relationship between x and y in the Puromycin dataset is not linear (without a transformation of y). Let's do a proper test to see if this is really the case. We can do this by fitting a polynomial regression with the explanatory variable raised to higher powers such as 2 or 3. **A significantly better fit of a polynomial regression indicates that we are dealing with curvature in the data.** Let's use only the treated data to do the exercise.
+
+```{r, echo=TRUE}
+fitLinearTreated = lm(Puromycin$rate[which(Puromycin$state == "treated")] ~ Puromycin$conc[which(Puromycin$state == "treated")])
+
+fitPolyTreated = lm(Puromycin$rate[which(Puromycin$state == "treated")] ~ Puromycin$conc[which(Puromycin$state == "treated")] + I(Puromycin$conc[which(Puromycin$state == "treated")]^2))
+
+summary(fitLinearTreated)
+summary(fitPolyTreated)
+```
+
+The proper tool to compare two models **FROM THE SAME DATA** is the **Akaike Information Criteria** (or another version called BIC if you prefer). To keep things short, just remember that **the model with lower AIC score wins**. Use table below to compare the AIC values of different models.
+
+AIC   | Models are
+----- | ----------
+0-2 	| Equally good
+4-7 	| Nearly as good
+>10 	| Different
+
+```{r, echo=TRUE}
+AIC(fitLinearTreated,fitPolyTreated)
+```
+
+You can also do a test between the two models to get a p-value of the difference in model fit.
+
+```{r, echo=TRUE}
+anova(fitLinearTreated,fitPolyTreated)
+```
+
+**Exercise**: Which regression model wins (fits the data better), the linear (without y-transformation) or the polynomial (with higher powers of x)? What do I need to remember when I perform AIC analysis? Explain this to the person sitting next to you.
+
+### Comparison of slopes
+
+The obvious next question is whether the responses of the two groups ("treated" and "untreated") differ. This is analogous to asking **whether the slopes of the regression model fit to each group differ**. Let's analyze the different responses of the treated and untreated samples.
+
+```{r, echo=TRUE}
+fitTreated = lm(Puromycin$rate[which(Puromycin$state == "treated")] ~ log(Puromycin$conc[which(Puromycin$state == "treated")]))
+fitUntreated = lm(Puromycin$rate[which(Puromycin$state == "untreated")] ~ log(Puromycin$conc[which(Puromycin$state == "untreated")]))
+
+summary(fitTreated)
+summary(fitUntreated)
+```
+
+**Notice how the R-squared go up compared to the previous models where we didn't separate the two groups.**
+
+Now le'ts plot the two regression lines with the untransformed y-values. (We need to predict the y values based on our non-linear model of y ~ log(x) ==> y = a + b*log(x))
+
+```{r, echo=TRUE}
+xv = seq(0,1.2,0.01)
+
+aT = coef(fitTreated)[1] 
+bT = coef(fitTreated)[2]
+yvT = aT + bT*log(xv)
+
+aUT = coef(fitUntreated)[1] 
+bUT = coef(fitUntreated)[2]
+yvUT = aUT + bUT*log(xv)
+
+par(mfrow=c(1,1))
+plot(Puromycin$rate ~ Puromycin$conc,pch=20,col=as.factor(Puromycin$state))
+lines(xv,yvT,col='black')
+lines(xv,yvUT,col='red')
+```
+
+Now we're already pretty close to the end -- we have tested the regression model for both treated and untreated samples and we have a pretty plot. Our last question is whether the two slopes "red" and "black" are different. We can test this with the *anova* command, but this time we need to specify all terms in the same model.We are essentially performing *ANCOVA* analysis (ANCOVA: explanatory variables contain both categorical and quantitative variables).
+
+```{r, echo=TRUE}
+anova(lm(Puromycin$rate ~ log(Puromycin$conc) + Puromycin$state + log(Puromycin$conc):Puromycin$state))
+```
+
+The linear model reads like this: **explain the rate as a function of log of concentration, state and the interaction between concentration and state**. What you want to look in the output is the **interaction term concentration:state** -- which is highly significant, i.e. **the slopes are significantly different**.
+
+**Exercise**: Plot the log-transformed y-values with the two linear model fits to see the slope difference in the linear model (straight) lines.
+
+
+### Multiple regression
+
+Multiple regression is a tool for problems where you have more than one indepedent (explanatory) predictor associated with every value of the dependent variable. In multiple regression, the dependent variable is modeled as a simultaneous linear function of all the indepedent variables. Let's have a look at a dataset included in the *asbio* package.
+
+```{r, echo=TRUE}
+install.packages("asbio")
+library(asbio)
+data("wash.rich")
+head(wash.rich)
+colnames(wash.rich)[2:7] = c('nPlantSpecies','nitrogen','slope','aspect','rockCover','pH')
+```
+
+Multiple regression is in the best case very powerful and simple, but it has some very important assumptions. As in simple linear regression, our variables need to be quantitive and more importantly our independent (predictor) variables need to independent of one another. In statistics jargon we say the can't be any **collinearity** in the data, i.e. two or more independent variables can't be highly correlated with one another.
+
+You maybe noticed that there is one discrete variable in the data set (our dependent variable of interest in this case): the number of plant species per site. We are hoping that the N is high enough that this discrete variable will follow approximate normality because of the *central limit theorem* (https://en.wikipedia.org/wiki/Central_limit_theorem). Let's check this using a histogram, then let's investigate if there's any collinearity in the data using a pairwise correlation matrix.  
+
+```{r, echo=TRUE}
+hist(wash.rich$nPlantSpecies)
+
+panel.pearson = function(x, y, ...) {
+  horizontal = (par("usr")[1] + par("usr")[2]) / 2 # these two lines are needed to 
+  vertical = (par("usr")[3] + par("usr")[4]) / 2 # define the area of the plot that we are manipulating
+  text(horizontal, vertical, format(abs(cor(x,y)), digits=2)) # this is the actual function we want to execute
+}
+pairs(wash.rich,panel=panel.smooth,upper.panel=panel.pearson)
+```
+
+**Tip**: A standard test for (multi)collinearity does not exist but one can explore the level of (multi)collinarity in various ways. Above we have looked at pairwise correlations. Another popular methods is to examine *Variance Inflation Factors* (VIF) https://en.wikipedia.org/wiki/Variance_inflation_factor. The VIFs measure the degree to which the variance in the regression coefficients are inflated due to collinearity with other variables, relative to when predictors are not linearly related. The *car* package has an implementation of VIF with the function *vif*. As a rule of thumb a value of VIF > 5 in one or more explanatory variables indicates concerns with collinearity, and a VIF > 10 indicates severe problems.
+
+Overall, the data seems reasonably well suited for multiple regression. The variables are normally distributed and there's a general lack of collinearity between the independent variables. Let's perform the regression using the *lm* function.
+
+```{r, echo=TRUE}
+fitMulti = lm(wash.rich$nPlantSpecies ~ wash.rich$nitrogen + wash.rich$slope + wash.rich$aspect + wash.rich$rockCover + wash.rich$pH)
+
+summary(fitMulti)
+```
+
+**Exercise**: Interpret the output from the *summary* command. First of all, does the model explain any variation in the number of plant species? Which independent variables are statistically related to the number of plant species? How do you interpret the value of each beta-parameter?
+
+Our model contains only two parameters that seem to be related to the number of plant species. Ideally, we want to follow a principle called **Occam's razor** and define the minimally adequate (i.e. the most parsimonious) statistical model. As we've already learnt, we can use the AIC to decide between alternative models concerning the same data. The R function *step* makes the application of AIC very convenient.
+
+```{r, echo=TRUE}
+bestFitMulti = step(fitMulti)
+
+summary(bestFitMulti)
+```
+
+##Principal Component Analysis
+
+Principal component analysis (PCA) is  a statistical procedure commonly used to analyze major trends in multivariate data. Put simplistically, PCA clusters your samples by similarity and provides information on the variables responsible for this clustering. Below we will work through a PCA analysis with the Iris data, to determine the similarities in the morphological profiles of different plant species.
+
+```{r, echo=TRUE}
+# Load data
+data(iris)
+```
+
+First we log transform the data. Note that with the iris dataset this is not necessary as the data is not very skewed, but the log-transformation does not hurt...
+```{r, echo=TRUE}
+
+log.ir <- log(iris[, 1:4])
+ir.species <- iris[, 5]
+
+# apply PCA - scale. = TRUE is highly 
+# advisable, but default is FALSE. 
+ir.pca <- prcomp(log.ir,
+center = TRUE,
+scale. = TRUE)
+
+# print method
+print(ir.pca)
+
+
+
+
+# plot method
+plot(ir.pca, type = "l")
+
+# summary method will indicate the variance explained by each of the components. 
+summary(ir.pca)
+
+
+```
+
+now we want a visual representation of our PCA plot
+
+```{r, echo=FALSE}
+library(devtools)
+#install_github("ggbiplot", "vqv")
+
+library(ggbiplot)
+```
+
+```{r, echo=FALSE}
+g <- ggbiplot(ir.pca, obs.scale = 1, var.scale = 1, 
+groups = ir.species, ellipse = FALSE, 
+circle = FALSE)
+g <- g + scale_color_discrete(name = '')
+g <- g + theme(legend.direction = 'horizontal', 
+legend.position = 'top')
+print(g)
+```
+
+
