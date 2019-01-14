@@ -226,8 +226,6 @@ str(surveys)
 
 We can see that `surveys` has two classes of data: `int`, which stands for "integers" and `chr` which stands for "character."
 
-
-
 ## Subsetting data
 
 ## Calculating basic statistics on data
