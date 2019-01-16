@@ -26,7 +26,7 @@ The second day will cover the following statistical methods in R:
 You can access lesson materials for each day below:
 
 * [Lesson Materials - Day 1](day1_R.html)
-* [Lesson Materials - Day 2](day2_R.html)
+* [Lesson Materials - Day 2](day2_stats_tkarasov.html)
 
 The data for data for Day 1 can be accessed from the following link:
 * [Day 1 data](https://raw.githubusercontent.com/erdavenport/MPI_Intro_Stats_with_R/master/surveys_complete.csv)
