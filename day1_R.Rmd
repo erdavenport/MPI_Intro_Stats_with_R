@@ -25,6 +25,8 @@ The learning objectives for today are:
 * Make some plots
 * Load a library
 
+Today we'll be working with a data set of [ecological survey](https://figshare.com/articles/Portal_Project_Teaching_Database/1314459) data that have been pruned a bit. It consists of actual biological data collected over time in the Chihuahuan Desert in Arizona. 
+
 ## RStudio
 We will use R via the interactive development environment (IDE) RStudio.
 In this lesson we'll explore some of its useful features.
@@ -45,11 +47,9 @@ As a shortcut, you can press "Ctrl-Enter" instead of clicking on the "Run" butto
 
 ![RStudio Console](fig/rstudio-console.png)
 
-The R Console works the same as if you accessed R from the Unix shell or the Windows R GUI.
-Recall that the up and down arrows browse through past commands.
+Using the up and down arrows you to browse through past commands.
 
 The Environment panel describes all the objects present in the R session.
-It is similar to `ls`, but gives additional details like what is stored in the object.
 
 ![RStudio Environment](fig/rstudio-environment.png)
 
@@ -159,7 +159,7 @@ The most common way to read data into R is using the function `read.table`.
 Let's tell R to read in some data we've saved as a .csv file using the `read.table` function:
 
 ```{r}
-surveys <- read.table("portal_data_joined.csv", sep = ",", header = TRUE, stringsAsFactors = FALSE)
+surveys <- read.table("surveys_complete.csv", sep = ",", header = TRUE, stringsAsFactors = FALSE)
 ```
 
 Three things I often do when first reading in data are:
@@ -226,16 +226,164 @@ str(surveys)
 
 We can see that `surveys` has two classes of data: `int`, which stands for "integers" and `chr` which stands for "character."
 
-
-
 ## Subsetting data
+
+There are a few ways to pull out specific values of our data. If we have a vector and we wish to look at the first entry, you type the name of the vector and the number 1 in brackets:
+
+```{r}
+weight_kg[1]
+```
+
+If we want to look at the second value, type 2 in brackets:
+
+```{r}
+weight_kg[2]
+```
+
+For 2-dimensional data types, you'll type the number of the row, comma, the number of the column you wish to reference. 
+For example, let's look at the value in the second row, third column in surveys:
+
+```{r}
+surveys[2, 3]
+```
+
+Let's look at the first row, fifth column:
+
+```{r}
+surveys[1, 5]
+```
+
+You can look at entire row by reference the number of that row and leaving the column position blank. 
+Let's look at all of the first row of `surveys`:
+
+```{r}
+surveys[1, ]
+```
+
+To reference the `hindfoot_length` column, which is the 8th column, we can type:
+
+```{r, results="hide"}
+surveys[ ,8]
+```
+[Note: the above code should output 30,000 values of hindfoot length to your R terminal, but I've hidden them here.]
+
+You can also reference columns of a dataframe by the name of the column. 
+Let's look at all of the `hindfoot_length` values in `surveys`:
+
+```{r, results="hide"}
+surveys$hindfoot_length
+```
+
+[Note: the above code should output 30,000 values of hindfoot length to your R terminal, but I've hidden them here.] 
+
+Let's say we want to only look at the first five values of `hindfoot_length`. 
+To do that, we can "slice" the data where we put the number of the element we want to start on, `:`, the number of the element we want to end on. 
+To get the first five values of `hindfoot_length`:
+
+```{r}
+surveys$hindfoot_length[1:5]
+```
+
+We can also look at multiple elements of `hindfoot_length` that aren't all next to each other by indexing using the `c()` function.
+Let's look at at the 1, 4, 5, and 7th elements of `hindfoot_length`:
+
+```{r}
+surveys$hindfoot_length[c(1, 4, 5, 7)]
+```
 
 ## Calculating basic statistics on data
 
+R is a statistical language with many useful statistics functions available. 
+Let's calculate some basic statistics on `hindfoot_length`.
+
+What is the mean value of `hindfoot_length`?
+
+```{r}
+mean(surveys$hindfoot_length)
+```
+
+Let's calculate the median value of `hindfoot_length`:
+
+```{r}
+median(surveys$hindfoot_length)
+```
+
+Let's calculate the standard deviation of `hindfoot_length`:
+
+```{r}
+sd(surveys$hindfoot_length)
+```
+
+Often it's useful to quickly glance at all of these statistics and more for our data. 
+We can use the `summary()` function to find the minimum, 1st quartile, median, mean, 3rd quartile, and maximum value in our data:
+
+```{r}
+summary(surveys$hindfoot_length)
+```
+
 ## Plotting
+
+Another nice feature about R is that there are many functions built in to plot your data. 
+Let's use some of these functions to quickly look at some of the relationships between the variables in our dataset. 
+
+Let's create a scatterplot to compare `hindfoot_length` with `weight`. 
+The function `plot()` will plot two sets of values against each other along the x and y axis. 
+Let's have `hindfoot_length` along the x-axis and `weight` along the y-axis:
+
+```{r}
+plot(surveys$hindfoot_length, surveys$weight)
+```
+
+Let's look at the help documentation for `plot()` to see how we can make our plot look exactly like we want. 
+
+Let's add more descriptive axis titles, a main title, and color the points blue:
+
+```{r}
+plot(surveys$hindfoot_length, surveys$weight, xlab = "hindfoot length (cm)", ylab = "weight (g)", main = "Relationship of hindfoot length to weight in desert creatures", col = "blue")
+```
+
+We can also make boxplots easily in R. 
+Let's make a boxplot of the distribution of `hindfoot_length` by sex:
+
+```{r}
+boxplot(surveys$hindfoot_length ~ surveys$sex)
+```
+
+Let's pretty up the plot by including labels and coloring in the boxes. 
+
+```{r}
+boxplot(surveys$hindfoot_length ~ surveys$sex, xlab = "sex", ylab = "hindfoot length (cm)", main = "Distributions of hindfoot lengths by sex in desert creatures", col = c("pink", "lightblue"))
+```
 
 ## Loading libraries
 
+R comes with many functions built in (like all of the functions we've been using). 
+One of the powerful aspects of R is that anyone can create their own functions and share those with others in bundles called libraries. 
+There is one main location where R libraries are stored, which is called [CRAN](https://cran.r-project.org/) (which stands for the Comprehensive R Archive Network). 
+In RStudio, you can install packages to your local version of R by going over to the "Packages" tab, clicking the "Install" button, and typing in the name of the package you wish install. 
 
+Since today was so short, I recommend that you install a [package that will help you keep learning R in R called swirl.](https://swirlstats.com/).
 
+Go over to the Packages tab and click the "Install" button. 
+
+![Packages Install](fig/install_button.png)
+
+When the window pops up to install packages, type in the name "swirl", make sure the "install dependencies" tab is checked, and click "install".
+
+![Install Swirl](fig/install_swirl.png)
+
+The code for this package now lives on our computer.
+However, these functions aren't automatically loaded into R. 
+You have to tell R which libraries you'd like to open up each time you load R. 
+Let's tell R to load up the `swirl` package:
+
+```{r}
+library("swirl")
+```
+
+You'll see that this package has a bunch of interactive lessons that you can do right from within R to help learn the language. 
+
+There are tons and tons of libraries available for R, to do everything from advanced statistical methods, machine learning, data cleaning, or parallelization. 
+There is a great list of [awesome R packages here](https://awesome-r.com/).
+Once you get familiar with R, I recommend learning the packages written by Hadley Wickham, including `ggplot2` for plotting, `dplyr` for data munging, and `readr` for reading in large data sets quickly. 
 
