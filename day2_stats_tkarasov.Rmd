@@ -7,24 +7,26 @@ output:
   pdf_document: default
 ---
 
-```{r setup, include=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+```{r setup, include=FALSE, tidy=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
-options(repos=c(CRAN="goettingen"))
-#tidy.opts = list(width.cutoff = 60)
-
-```
-
-```{r}
 library(knitr)
 opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
 ```
-# General introduction: Basic Statistics in R
+
+## General introduction: Basic Statistics in R
+
+On Day 2, we will focus on learning basic statistics and calculating them in R. 
+The learning objectives for today are:
+
+* Compare the variances of samples
+* Perform t-test and non-parametric tests
+* Perform linear regression and ANOVA
+* Perfomr Principal Component Analysis
+* Make more advanced plots using ggplot2
 
 We'll be using datasets that come with the R distribution. They are immediately available when you load R. Before we begin, I want to give a hat-tip to Jukka-Pekka Verta who first developed this course.
 
 **Exercise:** Confirm that you have access to the *iris* and *Puromycin* datasets.
-
-
 
 ## Variable and analysis types
 
@@ -44,8 +46,8 @@ Use the table below to determine the type of analysis that is appropriate for ea
 Predictor variable        | Method   
 ------------------------- | -----
 Continuous                | Regression   
-Categorical               | Analysis of variance (ANOVA)  
-Continuous & categorical	| Analysis of covariance (ANCOVA)  
+Categorical               | Analysis of variance (ANOVA), Regression  
+Continuous & categorical	| Analysis of covariance (ANCOVA), Regression  
 
 Response variable | Method
 ----------------- | ------
@@ -216,23 +218,7 @@ OK, so now we have an intuition of what the concept of variance means. Here it's
   * The true variance of a population
   * The estimated variance of a population (i.e. the sample variance)
 
-Both of these deal with estimating the variability or "spread" of your data around some mean value. We can establish the true variance of a variable only in the case when we measure every single case in a population (e.g. measuring the length of every single stickleback in the Neckar). Its obvious that in practice, we will never know the true variance of a variable. We therefore use the variance observed in a sample (the **sample variance**) as an **approximation** of the true variance. Because variance is an estimated parameter, it makes sense that its precision depends on the sample size. Consider the following plot. The code reads like this: "for increasing sample sizes of 3 to 30, draw a random sample from a normal distribution with a mean of 10 and a standard deviation of 2 (meaning a variance of 4) and calculate the variance of the random sample. Do this 30 times for each case of a particular sample size.
-
-```{r, echo=TRUE}
-plot(c(0,32),c(0,15),type='n',xlab='Sample size',ylab='Estimate of variance')
-abline(h=4,col='green')
-for (i in seq(3,31,2)){
-  for (n in 1:30){
-    x = rnorm(i,mean=10,sd=2)
-    points(i,var(x))
-  }
-}
-```
-
-The main message of this exercise is obvious when we look at the plot: **increasing your sample size will lead to a smaller sample variance** (which is an estimate of the true variance of the population - the green horizontal line). 
-
-
-
+Both of these deal with estimating the variability or "spread" of your data around some mean value. We can establish the true variance of a variable only in the case when we measure every single case in a population (e.g. measuring the length of every single stickleback in the Neckar). Its obvious that in practice, we will never know the true variance of a variable. We therefore use the variance observed in a sample (the **sample variance**) as an **approximation** of the true variance. Because variance is an estimated parameter, it makes sense that its precision depends on the sample size. 
 
 
 ## Standard error (of the mean) and Confidence Intervals
@@ -248,55 +234,9 @@ Consider for example the sample mean. This is an estimated parameter that approx
 
   * SE = sqrt(variance/sample size)
 
-This quantity is called the **STANDARD ERROR of the MEAN**. Let's explore the SE with a plot.
+ **The SE is always expressed in the same units as the measured variable.** This means that we can represent the mean and it's SE as a barplot with whiskers, like so:
 
-```{r, echo=TRUE}
-plot(c(0,32),c(0,5),type='n',xlab='Sample size',ylab='Standard Error of the Mean')
-for (i in seq(3,31,2)){
-  for (n in 1:30){
-    x = rnorm(i,mean=10,sd=2)
-    points(i,sqrt(var(x)/i))
-  }
-}
-```
 
-The plot represent individual SE estimates for the same true mean of 10, calculated thirty times for a given sample size. More samples we have, more precise our estimate of the mean becomes (the individual SE estimates give more similar results and the cloud of SE estimates group more closely towards zero). **The SE is always expressed in the same units as the measured variable.** This means that we can represent the mean and it's SE as a barplot with whiskers, like so:
-
-```{r, echo=TRUE}
-means = c()
-se = c()
-for (i in seq(3,61,2)){
-  x = rnorm(i,mean=10,sd=2)
-  means[as.character(i)] = mean(x)
-  se[as.character(i)] = sqrt(var(x)/i)
-}
-
-g = ggplot(data.frame(means=means,se=se))
-g = g + geom_bar(aes(y=means,x=seq(3,61,2)),stat='identity')
-g = g + ylim(0,14)
-g = g + geom_errorbar(aes(ymin=means-se,ymax=means+se,x=seq(3,61,2)))
-g = g + ylab('Mean +- 1 SE')
-g = g + xlab('Sample size')
-g
-```
-
-You should interpret the plot like this: Bars represent individual estimates for the population mean with a given sample size. Whiskers represent the +- 1 SE for that mean estimate. Notice how the mean estimates tend to converge towards the true mean (10) as sample size increases. Also, the SE gets smaller as sample size goes up. In order to interpret the difference between the true mean and the standard error we need to introduce a second concept: the **CONFIDENCE INTERVAL**.
-
-Look at the right-most bar on the barplot (N=61). Do the whiskers overlap with the true population mean of 10? Each of you will have a different answer because we all created independent random data.
-
-The whiskers represent 2*SE, meaning 1 SE below and above the sample mean. Because this is a standardized measure, it follows that the whiskers cover 68% of the probability distribution of the sample mean (34% on each side, the sample mean being in the middle of the distribution). There are two possibilities:
-
-  * True mean falls within this interval (within the whiskers)
-  * True mean does not fall within this interval (within the whiskers)
-
-This means that:
-
-  * If the true mean is within the interval represented buy 2*SE, it means that an event has occurred that had 68% probability.
-  * If the true mean is outside the interval (outside the whiskers), it means that an event has occurred that had 1-0.68=32% probability.
-
-In statistical language, we say that the whiskers form the **68% confidence interval of the sample mean**.
-
-**Exercise**: Can you think of a way to calculate the (approximate and/or precise) 95% confidence interval for the mean?
 
 **Tip**: The formal way of writing a confidence interval for a normally distributed variable is the following.
 
@@ -600,24 +540,6 @@ All following columns follow logically from this:
 
 R-squared indicates that ~62% of the variability in the data can be accounted by differences in species means. Notice that the last line gives the overall ANOVA test statistics (F), so we wouldn't actually even need to run the simple *summary* command in the first place.
 
-Ok so now we know almost everything there is to know about this ANOVA.
-We still don't know is versicolor and virginica means differ (after all, the last output was relative to setosa mean). Let's conduct a **Tukey's Honest Significant Difference (HSD)** test to know that last bit of information.
-
-```{r, echo=TRUE}
-TukeyHSD(aov(iris$Sepal.Length ~ iris$Species))
-```
-
-There we are, all the differences in means are given in the *diff* column.
-
-  * lwr and upr are the 95% confidence intervals
-  * the last column is the p-value (this time adjusted for multiple testing, not in the case of summary.lm)
-
-
-**Exercise**: another option is to use the *asbio* package and run the same test with the command 
-  
-  * pairw.anova(iris[,'Sepal.Length'],iris[,'Species'])
-
-The output is a bit more friendly, can you spot the difference between the output of *TukeyHSD* and *pairw.anova*?
 
 ### Assumptions
 
@@ -669,10 +591,8 @@ g
 ```
 
 Note how using *facet_wrap* forces the x- and y-axis scales to remain the same in all subplots.
-This gives you a better sence of scale of the data and forces good habits.
+This gives you a better sense of scale of the data and forces good habits.
 You also save a lot of typing and reduce the possibilities for bugs compared to the basic *plot* command.
-
-
 
 
 
@@ -683,18 +603,21 @@ Correlation measures the independence vs. dependence of two continuous variables
 To calculate the correlation between petal and sepal lenghts, all we need to do is:
 
 ```{r, echo=TRUE}
-cor(iris$Sepal.Length[which(iris$Species=='setosa')],iris$Petal.Length[which(iris$Species=='setosa')])
+cor.test(iris$Sepal.Length[which(iris$Species=='setosa')],iris$Petal.Length[which(iris$Species=='setosa')])
+```
+
+Now I would like to get the p-value from this correlation. How can I visualize the attributes of a given object? Easy! The command is attributes
+```{r, purl=FALSE}
+mycor = cor.test(iris$Sepal.Length[which(iris$Species=='setosa')],iris$Petal.Length[which(iris$Species=='setosa')])
+
+attributes(mycor)
+
+rval = cor.test(iris$Sepal.Length[which(iris$Species=='setosa')],iris$Petal.Length[which(iris$Species=='setosa')])$p.val
 ```
 
 So what does the value of correlation coefficient (rho) mean? Correlation considers the variance in *x*, the variance in *y* and their covariance (how the two co-vary). Values of rho always vary between -1 and 1. Values near -1 indicate strong negative correlation, while values near 1 indicate strong positive correlation. When x and y are uncorrelated their covariance (and thus rho) is 0. **Rho = 0 indicates a lack of linear association between the two variables.** Think of the lack of correlation as a plot of the two variables without any kind of structure -- just a random cloud of points. Correlation on the other hand means that there is a structure to that cloud of points -- maybe it's stretched on the diagonal and the could is pointing to upper right, in which case the correlation would be positive.
 
-The associated p-value of a correlation can be calculated so:
-
-```{r, echo=TRUE}
-cor.test(iris$Sepal.Length[which(iris$Species=='setosa')],iris$Petal.Length[which(iris$Species=='setosa')])
-```
-
-Note that the Pearson's correlation test assumes that *x* and *y* are normally distributed. There's also the non-parametric version of Spearman's rank correlation (in case of non-normality).
+Note that the default Pearson's correlation test assumes that *x* and *y* are normally distributed. There's also the non-parametric version of Spearman's rank correlation (in case of non-normality).
 
 ```{r, echo=TRUE}
 cor.test(iris$Sepal.Length[which(iris$Species=='setosa')],iris$Petal.Length[which(iris$Species=='setosa')],method='spearman')
@@ -746,77 +669,6 @@ fit  = lm(iris$Petal.Length[which(iris$Species=='virginica')] ~ iris$Sepal.Lengt
 fit
 abline(fit,col='green')
 ```
-
-### Residuals of the model
-
-The coefficients *a* and *b* are the maximum likelihood estimates for the intercept and the slope. No model is perfect, and there will always be a difference between the observed y-values and the y-values the model predicts given a certain x-value. The differences between the observed and fitted y-values are the **RESIDUALS** (of the model).
-Let's add these residuals to our plot.
-
-```{r, echo=TRUE}
-par(mfrow=c(1,1))
-plot(iris$Sepal.Length[which(iris$Species=='virginica')],iris$Petal.Length[which(iris$Species=='virginica')],pch=20)
-fit  = lm(iris$Petal.Length[which(iris$Species=='virginica')] ~ iris$Sepal.Length[which(iris$Species=='virginica')])
-fit
-abline(fit,col='green')
-
-fittedValues = predict(fit) # the fitted values will be a vector the same length of your original data you passed to the lm function
-
-fittedValues # these are the predicted values of y for a given x
-
-for (i in 1:length(which(iris$Species=='virginica'))){
-  observedValueY = iris$Petal.Length[which(iris$Species=='virginica')][i]
-  observedValueX = iris$Sepal.Length[which(iris$Species=='virginica')][i]
-  lines(c(observedValueX,observedValueX),c(observedValueY,fittedValues[i]),col='red')
-}
-```
-
-The residuals describe the goodness-of-fit of the linear model. Our maximum likelihood model is defined as the model that minimises the sum of squares of the residuals. You can intuitively understand how this is done if you consider the following: we know that the best fit regression line must pass through the central point of the cloud of points, which is situated at mean(x), mean(y). Finding the maximum likelihood line is analogous to pivoting the regression line around the central point until the sum of the residual lines is at its minimum.
-
-### Standard errors of the parameters
-
-Finding the best values for *a* and *b* so that the residuals are minimized is however just part of the story. To know how well our model describes the relationship between x and y we need to measure the reliability of these parameter estimates. In other words, we need to know the standard errors of *a* and *b*. We'll use a visual exercise to build our intuition of what this means.
-
-First, let's start by considering *b*. We need to split the orginal data into two so that we can see what's involved.
-
-```{r, echo=TRUE}
-sepalLengths = iris$Sepal.Length[which(iris$Species=='virginica')] 
-largeSpread = which(sepalLengths > 7 | sepalLengths < 6)
-smallSpread = which(sepalLengths < 7 & sepalLengths > 6)
-```
-
-**Exercise**: Do you understand what we had just done? Explain this to the person sitting next to you.
-
-From the following plot it will be obvious to see how that estimate of *b* depends on the spread of the explanatory variable (x).
-
-```{r, echo=TRUE}
-par(mfrow=c(1,3))
-plot(iris$Petal.Length[which(iris$Species=='virginica')][largeSpread]~iris$Sepal.Length[which(iris$Species=='virginica')][largeSpread],pch=20,xlim=c(5,8),ylim=c(4,7),ylab='Petal length',xlab='Sepal length',main='Large spread of x')
-abline(lm(iris$Petal.Length[which(iris$Species=='virginica')][largeSpread]~iris$Sepal.Length[which(iris$Species=='virginica')][largeSpread]),col='green')
-plot(iris$Petal.Length[which(iris$Species=='virginica')][smallSpread]~iris$Sepal.Length[which(iris$Species=='virginica')][smallSpread],pch=20,xlim=c(5,8),ylim=c(4,7),ylab='Petal length',xlab='Sepal length',main='Small spread of x')
-abline(lm(iris$Petal.Length[which(iris$Species=='virginica')][smallSpread]~iris$Sepal.Length[which(iris$Species=='virginica')][smallSpread]),col='green')
-plot(iris$Petal.Length[which(iris$Species=='virginica')] ~ iris$Sepal.Length[which(iris$Species=='virginica')],pch=20,xlim=c(5,8),ylim=c(4,7),ylab='Petal length',xlab='Sepal length',main='Original data')
-abline(fit,col='green')
-```
-
-It's obvious to see what's going on: **having a large spread of x-values gives a better estimate of the slope** (closer to the model with all data).
-
-The confidence we have in the parameter *a* similarly depends on x, but on the distance of x-values from the intercept.
-
-```{r, echo=TRUE}
-sepalLengths = iris$Sepal.Length[which(iris$Species=='virginica')] 
-largeSepal = which(sepalLengths > 6.5)
-smallSepal = which(sepalLengths < 6.5)
-
-par(mfrow=c(1,3))
-plot(iris$Petal.Length[which(iris$Species=='virginica')][largeSepal]~iris$Sepal.Length[which(iris$Species=='virginica')][largeSepal],pch=20,xlim=c(5,8),ylim=c(4,7),ylab='Petal length',xlab='Sepal length',main='Large values of x')
-abline(lm(iris$Petal.Length[which(iris$Species=='virginica')][largeSepal]~iris$Sepal.Length[which(iris$Species=='virginica')][largeSepal]),col='green')
-plot(iris$Petal.Length[which(iris$Species=='virginica')][smallSepal]~iris$Sepal.Length[which(iris$Species=='virginica')][smallSepal],pch=20,xlim=c(5,8),ylim=c(4,7),ylab='Petal length',xlab='Sepal length',main='Small values of x')
-abline(lm(iris$Petal.Length[which(iris$Species=='virginica')][smallSepal]~iris$Sepal.Length[which(iris$Species=='virginica')][smallSepal]),col='green')
-plot(iris$Petal.Length[which(iris$Species=='virginica')] ~ iris$Sepal.Length[which(iris$Species=='virginica')],pch=20,xlim=c(5,8),ylim=c(4,7),ylab='Petal length',xlab='Sepal length',main='Original data')
-abline(fit,col='green')
-```
-
-Again: **having x-values close to the intercept will increase the precision of the estimate for a** (it will be more similar to the intercept of the model estimated from all data). These above behaviours of *a* and *b* are summarized by their standard errors (you can use any statistics text book to look up the maths of this).
 
 ### Model testing
 
@@ -885,191 +737,6 @@ plot(fit)
 
 The top row is the most important. You want the residuals vs fitted values to be a random cloud of points without any tendency to increase or decrease. The q-q plot should be a straight line if the model residuals are normally distributed. The scale-location plot is like the first plot but on another scale - you don't want the spread on y-axis to change as a function of x-values. The residual vs leverage highlights the influence of single datapoints on parameter estimates - ideally you want all the points inside the dashed lines.
 
-### Non-linear response variable
-
-What if the response is non-linear? In biology we often encounter relationships that would be best described by a **curved line**. Lets have a look at another dataset.
-
-```{r, echo=TRUE}
-head(Puromycin)
-summary(Puromycin)
-par(mfrow=c(1,2))
-plot(Puromycin$rate~Puromycin$conc)
-plot(Puromycin$rate~Puromycin$conc,col=as.factor(Puromycin$state))
-```
-
-**Exercise**: Discuss whether the response variable is linear or not and what could be done to render it linear.
-
-A simple linear model would probably be a bad fit to the data but a log-transformation might work. Remember that after transformation all variables of our model are still linear -- we use the same y = a + bx form we did previously and the *lm* function (you can look up the mathematical proof for this in any stats text book).
-
-```{r, echo=TRUE}
-fitLinear = lm(Puromycin$rate~Puromycin$conc)
-
-fitLog = lm(Puromycin$rate~log(Puromycin$conc))
-
-par(mfrow=c(1,2))
-plot(Puromycin$rate~Puromycin$conc,pch=20)
-abline(fitLinear,col='green')
-plot(Puromycin$rate~log(Puromycin$conc),pch=20)
-abline(fitLog,col='green')
-```
-
-Compare the R-squared values of the linear models with non-transformed and transformed y-values.
-
-```{r, echo=TRUE}
-summary(fitLinear)
-summary(fitLog)
-```
-
-Transforming the explanatory variable (concentration) with a log function produces a good fit, so lets check the assumptions.
-
-```{r, echo=TRUE}
-par(mfrow=c(2,2))
-plot(lm(Puromycin$rate~log(Puromycin$conc)))
-```
-
-The transformation-approach in this case isn't so bad.
-Aspect you need to look out for in this type of data is the non-constancy of variance.
-In this data set the problem isn't so bad, probably because we have so few data points (so that variance is automatically high even for low y-values).
-
-To plot curved regression lines to the original data (and not the log-transformed data) you need to predict the y-values by hand, i.e. we need to predict the y values based on our non-linear model of y ~ log(x) ==> y = a + b*log(x).
-
-```{r, echo=TRUE}
-xv = seq(0,1.2,0.01) # range of x-values 
-
-a = coef(fitLog)[1] # coefficient a
-
-b = coef(fitLog)[2] # coefficient b
-
-yv = a + b*log(xv) # predicted y-values
-
-par(mfrow=c(1,1))
-plot(Puromycin$rate~Puromycin$conc,pch=20)
-lines(xv,yv,col='green')
-```
-
-### Polynomial regression
-
-Now we're pretty sure that the relationship between x and y in the Puromycin dataset is not linear (without a transformation of y). Let's do a proper test to see if this is really the case. We can do this by fitting a polynomial regression with the explanatory variable raised to higher powers such as 2 or 3. **A significantly better fit of a polynomial regression indicates that we are dealing with curvature in the data.** Let's use only the treated data to do the exercise.
-
-```{r, echo=TRUE}
-fitLinearTreated = lm(Puromycin$rate[which(Puromycin$state == "treated")] ~ Puromycin$conc[which(Puromycin$state == "treated")])
-
-fitPolyTreated = lm(Puromycin$rate[which(Puromycin$state == "treated")] ~ Puromycin$conc[which(Puromycin$state == "treated")] + I(Puromycin$conc[which(Puromycin$state == "treated")]^2))
-
-summary(fitLinearTreated)
-summary(fitPolyTreated)
-```
-
-The proper tool to compare two models **FROM THE SAME DATA** is the **Akaike Information Criteria** (or another version called BIC if you prefer). To keep things short, just remember that **the model with lower AIC score wins**. Use table below to compare the AIC values of different models.
-
-AIC   | Models are
------ | ----------
-0-2 	| Equally good
-4-7 	| Nearly as good
->10 	| Different
-
-```{r, echo=TRUE}
-AIC(fitLinearTreated,fitPolyTreated)
-```
-
-You can also do a test between the two models to get a p-value of the difference in model fit.
-
-```{r, echo=TRUE}
-anova(fitLinearTreated,fitPolyTreated)
-```
-
-**Exercise**: Which regression model wins (fits the data better), the linear (without y-transformation) or the polynomial (with higher powers of x)? What do I need to remember when I perform AIC analysis? Explain this to the person sitting next to you.
-
-### Comparison of slopes
-
-The obvious next question is whether the responses of the two groups ("treated" and "untreated") differ. This is analogous to asking **whether the slopes of the regression model fit to each group differ**. Let's analyze the different responses of the treated and untreated samples.
-
-```{r, echo=TRUE}
-fitTreated = lm(Puromycin$rate[which(Puromycin$state == "treated")] ~ log(Puromycin$conc[which(Puromycin$state == "treated")]))
-fitUntreated = lm(Puromycin$rate[which(Puromycin$state == "untreated")] ~ log(Puromycin$conc[which(Puromycin$state == "untreated")]))
-
-summary(fitTreated)
-summary(fitUntreated)
-```
-
-**Notice how the R-squared go up compared to the previous models where we didn't separate the two groups.**
-
-Now le'ts plot the two regression lines with the untransformed y-values. (We need to predict the y values based on our non-linear model of y ~ log(x) ==> y = a + b*log(x))
-
-```{r, echo=TRUE}
-xv = seq(0,1.2,0.01)
-
-aT = coef(fitTreated)[1] 
-bT = coef(fitTreated)[2]
-yvT = aT + bT*log(xv)
-
-aUT = coef(fitUntreated)[1] 
-bUT = coef(fitUntreated)[2]
-yvUT = aUT + bUT*log(xv)
-
-par(mfrow=c(1,1))
-plot(Puromycin$rate ~ Puromycin$conc,pch=20,col=as.factor(Puromycin$state))
-lines(xv,yvT,col='black')
-lines(xv,yvUT,col='red')
-```
-
-Now we're already pretty close to the end -- we have tested the regression model for both treated and untreated samples and we have a pretty plot. Our last question is whether the two slopes "red" and "black" are different. We can test this with the *anova* command, but this time we need to specify all terms in the same model.We are essentially performing *ANCOVA* analysis (ANCOVA: explanatory variables contain both categorical and quantitative variables).
-
-```{r, echo=TRUE}
-anova(lm(Puromycin$rate ~ log(Puromycin$conc) + Puromycin$state + log(Puromycin$conc):Puromycin$state))
-```
-
-The linear model reads like this: **explain the rate as a function of log of concentration, state and the interaction between concentration and state**. What you want to look in the output is the **interaction term concentration:state** -- which is highly significant, i.e. **the slopes are significantly different**.
-
-**Exercise**: Plot the log-transformed y-values with the two linear model fits to see the slope difference in the linear model (straight) lines.
-
-
-### Multiple regression
-
-Multiple regression is a tool for problems where you have more than one indepedent (explanatory) predictor associated with every value of the dependent variable. In multiple regression, the dependent variable is modeled as a simultaneous linear function of all the indepedent variables. Let's have a look at a dataset included in the *asbio* package.
-
-```{r, echo=TRUE}
-install.packages("asbio")
-library(asbio)
-data("wash.rich")
-head(wash.rich)
-colnames(wash.rich)[2:7] = c('nPlantSpecies','nitrogen','slope','aspect','rockCover','pH')
-```
-
-Multiple regression is in the best case very powerful and simple, but it has some very important assumptions. As in simple linear regression, our variables need to be quantitive and more importantly our independent (predictor) variables need to independent of one another. In statistics jargon we say the can't be any **collinearity** in the data, i.e. two or more independent variables can't be highly correlated with one another.
-
-You maybe noticed that there is one discrete variable in the data set (our dependent variable of interest in this case): the number of plant species per site. We are hoping that the N is high enough that this discrete variable will follow approximate normality because of the *central limit theorem* (https://en.wikipedia.org/wiki/Central_limit_theorem). Let's check this using a histogram, then let's investigate if there's any collinearity in the data using a pairwise correlation matrix.  
-
-```{r, echo=TRUE}
-hist(wash.rich$nPlantSpecies)
-
-panel.pearson = function(x, y, ...) {
-  horizontal = (par("usr")[1] + par("usr")[2]) / 2 # these two lines are needed to 
-  vertical = (par("usr")[3] + par("usr")[4]) / 2 # define the area of the plot that we are manipulating
-  text(horizontal, vertical, format(abs(cor(x,y)), digits=2)) # this is the actual function we want to execute
-}
-pairs(wash.rich,panel=panel.smooth,upper.panel=panel.pearson)
-```
-
-**Tip**: A standard test for (multi)collinearity does not exist but one can explore the level of (multi)collinarity in various ways. Above we have looked at pairwise correlations. Another popular methods is to examine *Variance Inflation Factors* (VIF) https://en.wikipedia.org/wiki/Variance_inflation_factor. The VIFs measure the degree to which the variance in the regression coefficients are inflated due to collinearity with other variables, relative to when predictors are not linearly related. The *car* package has an implementation of VIF with the function *vif*. As a rule of thumb a value of VIF > 5 in one or more explanatory variables indicates concerns with collinearity, and a VIF > 10 indicates severe problems.
-
-Overall, the data seems reasonably well suited for multiple regression. The variables are normally distributed and there's a general lack of collinearity between the independent variables. Let's perform the regression using the *lm* function.
-
-```{r, echo=TRUE}
-fitMulti = lm(wash.rich$nPlantSpecies ~ wash.rich$nitrogen + wash.rich$slope + wash.rich$aspect + wash.rich$rockCover + wash.rich$pH)
-
-summary(fitMulti)
-```
-
-**Exercise**: Interpret the output from the *summary* command. First of all, does the model explain any variation in the number of plant species? Which independent variables are statistically related to the number of plant species? How do you interpret the value of each beta-parameter?
-
-Our model contains only two parameters that seem to be related to the number of plant species. Ideally, we want to follow a principle called **Occam's razor** and define the minimally adequate (i.e. the most parsimonious) statistical model. As we've already learnt, we can use the AIC to decide between alternative models concerning the same data. The R function *step* makes the application of AIC very convenient.
-
-```{r, echo=TRUE}
-bestFitMulti = step(fitMulti)
-
-summary(bestFitMulti)
-```
 
 ##Principal Component Analysis
 
