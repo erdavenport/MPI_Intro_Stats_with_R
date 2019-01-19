@@ -160,7 +160,7 @@ abline(h=mean(iris$Sepal.Width[which(iris$Species == 'setosa')]),col='green')
 for (i in 1:length(which(iris$Species == 'setosa'))){
   meanWidth = mean(iris$Sepal.Width[which(iris$Species == 'setosa')])
   observedWidth = iris$Sepal.Width[which(iris$Species == 'setosa')][i]
-  lines(c(i,i),c(meanWidth,observedWidth),col='red')
+  lines(c(i,i),c(meanWidth, observedWidth),col='red')
 }
 ```
 
