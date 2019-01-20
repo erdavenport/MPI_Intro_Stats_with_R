@@ -107,37 +107,6 @@ boxplot(iris$Sepal.Length ~ iris$Species,main='Sepal length',las=2)
 boxplot(iris$Sepal.Width ~ iris$Species,main='Sepal width',las=2)
 ```
 
-Using the basic plot command often means you need to do a lot of typing and that's where the package *ggplot2* comes in handy.
-Start by melting the dataframe to just three columns with *melt* from the package *reshape*.
-
-```{r, echo=TRUE}
-library(reshape)
-irisMelt = melt(iris)
-head(irisMelt)
-```
-
-**Exercise**: Make sure you understand what *melt* is doing to your data.
-
-Why do we manipulate our data with *melt*? Using *melt* and *ggplot* allows you to "wrap" your variables into categories and plot them all together in aestethically pleasing (and publication-quality) manner. *Ggplot* works a bit differently from most R functions. Think of *ggplot* as a figure where you add layers upon layers of different data. This takes some getting used to, but in the end makes the construction of complex figures much more straight forward. Your *ggplot* figure code is also easy to read.
-
-```{r, echo=TRUE}
-library(ggplot2)
-g = ggplot(irisMelt) # the first line initiates ggplot with your data frame
-g = g + geom_boxplot(aes(x=Species,y=value)) # second line defines that we want a boxplot, and which columns of the data frame to plot
-g = g + facet_wrap(~variable) # third line defines that we want to separate each measurement into its own bowplot
-g # last line executes the ggplot command
-```
-
-A cool feature of constructing *ggplots* element-by-element like this is that you can add more things to existing *ggplots*.
-Let's add all the raw data points on top of the boxplots.
-
-```{r, echo=TRUE}
-g = g + geom_jitter(aes(x=Species,y=value),cex=.5) # geom_jitter adds the datapoint and cex=.5 shrinks the datapoints by 50% relative to default
-g # and then plot the ggplot again
-```
-
-
-
 ## Variance
 
 The level of variance in your data is so important that it deserves a special section in this work-though exercise. You calculate the variance for two main reasons:
@@ -152,17 +121,15 @@ par(mfrow=c(1,1))
 plot(iris$Sepal.Width[which(iris$Species == 'setosa')])
 ```
 
+
 A fundamental measure of variation (scatter) in data are the **RESIDUALS**. Residuals are the deviation of measured values from the mean value, this is best explained by a plot.
 
 ```{r, echo=TRUE}
 plot(iris$Sepal.Width[which(iris$Species == 'setosa')],pch=20)
 abline(h=mean(iris$Sepal.Width[which(iris$Species == 'setosa')]),col='green')
-for (i in 1:length(which(iris$Species == 'setosa'))){
-  meanWidth = mean(iris$Sepal.Width[which(iris$Species == 'setosa')])
-  observedWidth = iris$Sepal.Width[which(iris$Species == 'setosa')][i]
-  lines(c(i,i),c(meanWidth, observedWidth),col='red')
-}
 ```
+
+**Exercise**: How would you calculate the residual for a data point in this graph? 
 
 An important property of residuals is that they all add up to zero, irrespective of the level of variability in the data.
 This means that we can't use the residuals as such to measure variability in the data.
@@ -353,101 +320,21 @@ You can think of ANOVA as a case of t-test when you have more than 2 categories.
 Let's start by looking at the iris data again.
 
 ```{r, echo=TRUE}
-library(reshape)
-
-library(ggplot2)
-
-irisMelt = melt(iris)
-head(irisMelt)
-
-g = ggplot(irisMelt) 
-g = g + geom_boxplot(aes(x=Species,y=value)) 
-g = g + facet_wrap(~variable) 
-g
+boxplot(Sepal.Length ~ Species, ylab="Sepal Length", data=iris)
 ```
+
+Let's say we are conducting a study in which we want to know whether different species have different sepal lengths. If there were only two species, we could easily use a t-test. With multiple categories we can use ANOVA.
 
 The fundamental aspect of ANOVA is that **you use the variance within versus between classes to compare the means**.
 If that sounds counterintuitive the following plot should make things clearer.
 Let's look at sepal length in the **whole data** versus the mean of sepal lengths.
 
 ```{r, echo=TRUE}
-g = ggplot(iris) 
-g = g + geom_point(aes(x=1:length(Sepal.Length),y=Sepal.Length)) 
-g = g + geom_hline(aes(yintercept=mean(Sepal.Length)),colour='green')
-g
-```
-
-Now lets add the **residuals**.
-I've broken down the command to multiple lines so that its easier to see whats going on.
-
-```{r, echo=TRUE}
-g = g + geom_segment(aes(
-  x=1:length(Sepal.Length),
-  xend=1:length(Sepal.Length),
-  y=Sepal.Length,
-  yend=rep(mean(Sepal.Length),times=length(Sepal.Length)))
-  ,colour='red')
-g
+plot(iris$Sepal.Length, ylab="Sepal Length")
+abline(a=mean(iris$Sepal.Length), b=0, col="RED")
 ```
 
 The essence of ANOVA is that **we compare the residuals relative to the category means and the residuals relative to the global mean** of the data set.
-Lets first plot the category (species) means to the plot instead of the global mean.
-
-```{r, echo=TRUE}
-p = ggplot(iris) 
-p = p + geom_point(aes(x=1:length(Sepal.Length),y=Sepal.Length)) 
-p = p + geom_hline(aes(yintercept=mean(Sepal.Length[which(Species=='setosa')])),colour='green')
-p = p + geom_hline(aes(yintercept=mean(Sepal.Length[which(Species=='versicolor')])),colour='blue')
-p = p + geom_hline(aes(yintercept=mean(Sepal.Length[which(Species=='virginica')])),colour='purple')
-p
-```
-
-Now lets add the residuals again one species at a time.
-
-```{r, echo=TRUE}
-p = p + geom_segment(data=iris[which(iris$Species=='setosa'),], # we want to plot only the setosa residuals so we specify that to geom_segment
-  aes(
-  x=which(iris$Species=='setosa'), # the x-cordinates of the setosa data points on our plot 
-  xend=which(iris$Species=='setosa'), # the x-cordinates of the setosa data points on our plot
-  y=Sepal.Length, # y-start of our lines are in data points of sepal lengths in setosa 
-  yend=rep(mean(Sepal.Length),times=length(Sepal.Length))), # y-end of our lines are always at the mean sepal length in setosa
-  colour='green',alpha=.5)
-p # there's the residuals for setosa
-
-p = p + geom_segment(data=iris[which(iris$Species=='versicolor'),],
-  aes(
-  x=which(iris$Species=='versicolor'),
-  xend=which(iris$Species=='versicolor'),
-  y=Sepal.Length[which(Species=='versicolor')],
-  yend=rep(mean(Sepal.Length[which(Species=='versicolor')]),times=length(which(Species=='versicolor')))),
-  colour='blue',alpha=.5)
-p # residuals for versicolor
-
-p = p + geom_segment(data=iris[which(iris$Species=='virginica'),],
-  aes(
-  x=which(iris$Species=='virginica'),
-  xend=which(iris$Species=='virginica'),
-  y=Sepal.Length,
-  yend=rep(mean(Sepal.Length),times=length(Sepal.Length))),
-  colour='purple',alpha=.5)
-p # residuals for virginica
-```
-
-**Here's the catch** -- if mean sepal lengths in the three species were the same, how would the residual lines we just draw (green, blue and purple) would compare to the residual lines we draw previously to the global mean (red)?
-The answer is: if the species means were in the same place as the global means, the group residuals would be the same length as the global residuals.
-This is in essence what we are testing when we do ANOVA.
-
-Next comes a tiny bit of R code tips.
-You migth have noticed that I names the first plot as "g" and the second as "p" -- there's a reason for that.
-We can plot multiple *ggplots* in the same window by using the package *grid*.
-Let's compare the two plots side-by-side.
-
-```{r, echo=TRUE}
-library(grid)
-pushViewport(viewport(layout = grid.layout(1,2)))
-print(g,vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
-print(p,vp = viewport(layout.pos.row = 1, layout.pos.col = 2))
-```
 
 ### Performing ANOVA
 
@@ -467,14 +354,6 @@ The output reads:
   * F value = variance(treatment) / variance(error)  ==  explained variance divided by unexplained variance  ==  signal-to-noise ratio
   * Pr(>F) = p-value associated with the F-value
 
-Let's visualise the means like we were producing a figure for a journal submission.
-
-```{r, echo=TRUE}
-g = ggplot(iris)
-g = g + geom_bar(aes(y=Sepal.Length,x=Species),stat='identity') 
-g
-```
-
 Remember that our estimate of the mean is drawn from a sampling population, therefore, it will contain some level of uncertainty. Usually with barplot, if we're plotting a mean, we want to represent the parameter uncertainty in our plot. Most usual case is to plot the SE of the mean as whiskers. You can also use the 95% Confidence Interval if you will. Let's plot the SE for now.
 
 First we need to calculate the SE, remember that to do this we need the variance and the sample size. 
@@ -488,9 +367,11 @@ means = aggregate(iris[,1:4],by=list(Species=iris$Species),FUN=mean)$Sepal.Lengt
 anovaPlot = data.frame(means=means,se=se,species=levels(iris$Species))
 ```
 
-Now we're ready to include the error bar in the plot.
+Now we're ready to include the error bar in the plot. I'm going to use some code from ggplot2 to look at the error bars. We haven't learned graphing in ggplot2 yet, but graphing error bars in base R is pretty wordy. 
 
 ```{r, echo=TRUE}
+#install.packages('ggplot2')
+library(ggplot2)
 g = ggplot(anovaPlot)
 g = g + geom_bar(aes(y=means,x=species),stat='identity') 
 g = g + geom_errorbar(aes(ymin=means-se,ymax=means+se,x=c(1:3)))
@@ -561,7 +442,7 @@ plot(aov(iris$Sepal.Length ~ iris$Species))
 There are many options to perform a non-parametric version of ANOVA. These include the **Kruskal Wallis test** and the **Mann-Whitney U test** (aka Wilcoxon rank sum test).
 You perform a non-parametric ANOVA if your data is not normally distributed.
 
-**Exercise**: use *?kuskal.test* and *?wilcox.test* to get familiar with non-parametric options for ANOVA. Another good resource is the Quick-R website: http://www.statmethods.net/stats/nonparametric.html
+**Exercise**: use *?kruskal.test* and *?wilcox.test* to get familiar with non-parametric options for ANOVA. Another good resource is the Quick-R website: http://www.statmethods.net/stats/nonparametric.html
 
 If non-parametric tests have fewer assumptions than parametric tests, why don't we use them all the time? Because they are far less powerful when data actually *is* normally distributed. Non-parametric tests are not affected by outliers because it doesn't matter how far they lie, but at the same time, extreme (but still normally distributed) values cannot add to the detectable signal. What this means is that you need more data for a similar p-value. As with an ANOVA, the null expectation for both *kuskal.test* and *wilcox.test* is that the means are all the same, so a significant result only says that at least one group is different than one other group.
 
@@ -580,21 +461,6 @@ plot(iris$Sepal.Length[which(iris$Species=='setosa')],iris$Petal.Length[which(ir
 plot(iris$Sepal.Length[which(iris$Species=='versicolor')],iris$Petal.Length[which(iris$Species=='versicolor')])
 plot(iris$Sepal.Length[which(iris$Species=='virginica')],iris$Petal.Length[which(iris$Species=='virginica')])
 ```
-
-The basic plot command produces quite nasty looking plots and you would need to specify for example the x- and y-axis labels to make it look nicer. Also note that the x- and y-axis scales are different in all three subplots -- this may be misleading and doesn't produce a very good overall representation of the whole data. Using *ggplot* helps with these issues, so lets use it to look at the relationship between sepal and petal lengths. In our case it's most convenient to use the original data frame where sepal and petal lengths are in different columns.
-
-```{r, echo=TRUE}
-g = ggplot(iris)
-g = g + geom_point(aes(Petal.Length,Sepal.Length))
-g = g + facet_wrap(~Species)
-g
-```
-
-Note how using *facet_wrap* forces the x- and y-axis scales to remain the same in all subplots.
-This gives you a better sense of scale of the data and forces good habits.
-You also save a lot of typing and reduce the possibilities for bugs compared to the basic *plot* command.
-
-
 
 ## Correlation
 
@@ -762,15 +628,11 @@ scale. = TRUE)
 # print method
 print(ir.pca)
 
-
-
-
 # plot method
 plot(ir.pca, type = "l")
 
 # summary method will indicate the variance explained by each of the components. 
 summary(ir.pca)
-
 
 ```
 
@@ -791,6 +653,73 @@ g <- g + scale_color_discrete(name = '')
 g <- g + theme(legend.direction = 'horizontal', 
 legend.position = 'top')
 print(g)
+```
+
+### Advanced plotting
+Until now we have been using base R for plotting. However, over the past few years an R package, ggplot2 has become increasingly popular for making publication quality images. We will not go through the syntax of ggplot today, but I wanted to make you aware of its existence. Its syntax is not so intuitive so you will need to spend some time googling around to get your plots up and running. Let's return to our initial box plots when we were analyzing the iris dataset.
+
+Using the basic plot command often means you need to do a lot of typing and that's where the package *ggplot2* comes in handy.
+Start by melting the dataframe to just three columns with *melt* from the package *reshape*.
+
+```{r, echo=TRUE}
+library(reshape)
+irisMelt = melt(iris)
+head(irisMelt)
+```
+
+**Exercise**: Make sure you understand what *melt* is doing to your data.
+
+Why do we manipulate our data with *melt*? Using *melt* and *ggplot* allows you to "wrap" your variables into categories and plot them all together in aestethically pleasing (and publication-quality) manner. *Ggplot* works a bit differently from most R functions. Think of *ggplot* as a figure where you add layers upon layers of different data. This takes some getting used to, but in the end makes the construction of complex figures much more straight forward. Your *ggplot* figure code is also easy to read.
+
+```{r, echo=TRUE}
+library(ggplot2)
+g = ggplot(irisMelt) # the first line initiates ggplot with your data frame
+g = g + geom_boxplot(aes(x=Species,y=value)) # second line defines that we want a boxplot, and which columns of the data frame to plot
+g = g + facet_wrap(~variable) # third line defines that we want to separate each measurement into its own bowplot
+g # last line executes the ggplot command
+```
+
+A cool feature of constructing *ggplots* element-by-element like this is that you can add more things to existing *ggplots*.
+Let's add all the raw data points on top of the boxplots.
+
+```{r, echo=TRUE}
+g = g + geom_jitter(aes(x=Species,y=value),cex=.5) # geom_jitter adds the datapoint and cex=.5 shrinks the datapoints by 50% relative to default
+g # and then plot the ggplot again
+```
+
+```{r, echo=TRUE}
+library(reshape)
+
+library(ggplot2)
+
+irisMelt = melt(iris)
+head(irisMelt)
+
+g = ggplot(irisMelt) 
+g = g + geom_boxplot(aes(x=Species,y=value)) 
+g = g + facet_wrap(~variable) 
+g
+```
+
+Or how about repeating some of our code looking at residuals:
+```{r, echo=TRUE}
+g = ggplot(iris) 
+g = g + geom_point(aes(x=1:length(Sepal.Length),y=Sepal.Length)) 
+g = g + geom_hline(aes(yintercept=mean(Sepal.Length)),colour='green')
+g
+```
+
+Now lets add the **residuals**.
+I've broken down the command to multiple lines so that its easier to see whats going on.
+
+```{r, echo=TRUE}
+g = g + geom_segment(aes(
+  x=1:length(Sepal.Length),
+  xend=1:length(Sepal.Length),
+  y=Sepal.Length,
+  yend=rep(mean(Sepal.Length),times=length(Sepal.Length)))
+  ,colour='red')
+g
 ```
 
 
