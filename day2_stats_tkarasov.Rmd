@@ -203,22 +203,6 @@ Consider for example the sample mean. This is an estimated parameter that approx
 
  **The SE is always expressed in the same units as the measured variable.** This means that we can represent the mean and it's SE as a barplot with whiskers, like so:
 
-
-
-**Tip**: The formal way of writing a confidence interval for a normally distributed variable is the following.
-
-  * CI(c) = Norm(alpha=1-c/2) * sqrt(variance/sample size)
-
-Where *c* is the desired level of confidence, e.g. 0.05 (5%), and *Norm* is the quantiles of the standard normal distribution (also called a **z-score**). Typical values of **z** for two-sided confidence intervals are given in the table below. You can also visit the wikipedia page https://en.wikipedia.org/wiki/Standard_score. Remember that *sqrt(variance/sample size)* is the standard error, so what we are essentially doing is scaling the standard error to achieve the desired level of confidence.
-
-c   | Norm(alpha=1-c/2)
---- | ----------------
-99% | 2.576
-98% | 2.326
-95% | 1.96
-90% | 1.645
-68% | 1
-
 ## The null hypothesis and the p-value
 
 In formal hypothesis testing, we start with a well-thought null hypothesis, which is assumed to be true, and an alternative hypothesis, for which we are attempting to validate using our data. The essential point is that a null hypothesis is falsifiable. We reject the null hypothesis (which in practice is often "*nothing varies*" or "*there is no difference between A and B*") when our data indicates that the null hypothesis is sufficiently unlikely. We base our decision each time on a value of a test statistics. If we observe a value of a test statistics that is very unlikely to be observed when the null hypothesis is *true*, we reject the null. In precise terms, **a p-value is an estimate of the probability of observing a value of a test statistics, or a value more extreme than this, when the null hypothesis is true**. You should memorise the last sentence. It is also important to memorise the following two things:
