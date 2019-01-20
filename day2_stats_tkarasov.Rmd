@@ -22,7 +22,7 @@ The learning objectives for today are:
 * Perform t-test and non-parametric tests
 * Perform linear regression and ANOVA
 * Perfomr Principal Component Analysis
-* Make more advanced plots using ggplot2
+* Appendix: Make more advanced plots using ggplot2
 
 We'll be using datasets that come with the R distribution. They are immediately available when you load R. Before we begin, I want to give a hat-tip to Jukka-Pekka Verta who first developed this course.
 
