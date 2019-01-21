@@ -22,6 +22,7 @@ The learning objectives for today are:
 * Learn data types
 * Learn to subset data
 * Calculate basic statistics on data
+* Create our own functions
 * Make some plots
 * Load a library
 
@@ -321,6 +322,127 @@ We can use the `summary()` function to find the minimum, 1st quartile, median, m
 summary(surveys$hindfoot_length)
 ```
 
+## Subsetting data that match a pattern with `which`
+
+Sometimes we want to examine only part of our data, based off of one of the variables in our dataset.
+For example, above we calculated the mean value of `hindfoot_length` using all individuals. 
+We know there are both male and female organisms included in this dataset though, so we may want to calculate mean separately for the two sexes. 
+
+How many of each sex are included in the dataset? 
+An easy way to tabulate the number of times each sex is seen in our data is to use the `table` function on the column `sex`:
+
+
+```{r}
+table(surveys$sex)
+```
+
+We can see there are ~14k females and ~16k males in our dataset. 
+
+The male and female organisms are all mixed together in the data.frame, and we don't want to go through by hand recording which rows correspond to each sex.
+We can use R to tell us which rows correspond to "F" vs. "M" records in our data.set. 
+To get a list of indicies of only the female animals ("F" in our dataset), we can use the function `which`.
+We enter in the vector we want to examine (`surveys$sex`) and ask which elements are equal to the character string we want to find (`"F"`) by using the "is equal to" operator, which is two equal signs in a row (`==`).
+
+```{r}
+female_rows <- which(surveys$sex == "F")
+```
+
+If we look at the length of of female_rows using the function `length()`, we see that it's the same as the value from `table()` above:
+
+```{r}
+length(female_rows)
+```
+
+What `female_rows` contains is a vector of the row number for each female record. 
+To take the mean of only the female records for `hindfoot_length`, we index `hindfoot_length` my those female rows and take the mean:
+
+```{r}
+mean(surveys$hindfoot_length[female_rows])
+```
+
+Challenge:
+What is the mean `hindfoot_length` in males?
+
+## Saving data
+
+Often we'll make some calculations on our data and then want to save that data back to our computer for use in other applications or to send to collaborators. 
+
+Let's first make a change to our data and then save it to our computer. 
+
+Let's convert `hindfoot_length` from cm to mm by multiplying by 10.  
+
+First, let's make a new variable that contains the `survey` data.frame. 
+
+```{r}
+surveys_new <- surveys
+```
+
+Now let's convert `hindfoot_length` to mm by multiplying by 10, and save back to the `hindfoot_length` in the new `surveys_new` data.frame we made.
+
+```{r}
+surveys_new$hindfoot_length <- surveys_new$hindfoot_length * 10
+```
+
+Now if you compare the top few lines of `surveys` and `surveys_new` you can see that `hindfoot_length` is 10x larger in `surveys_new`:
+
+```{r}
+head(surveys)
+head(surveys_new)
+```
+
+Now that we have this updated data, let's save it to our computer with the file name "surveys_new.csv" using the `write.table()` function. 
+
+```{r}
+write.table(surveys_new, "surveys_new.csv", sep = ",", row.names = FALSE, quote = FALSE)
+```
+
+Above, we are telling `write.table` to save the variable `surveys_new` to the file `surveys_new.csv`. 
+Each value in a row will be delimited with a comma (`sep = ","`). 
+We don't want row names saved (since they are just numbers and not informative (`row.names = FALSE`)) and we don't want R to put quotes around each individual entry (`quote = FALSE`). 
+
+If you look at your desktop (or whatever working directory you are currently in your R session), you will see the file "surveys_new.csv". 
+
+## Functions
+
+There are many built in functions in R that we've been using (`read.table()`, `mean()`, `sd()`, etc.), but we can also define our own functions. 
+Let's make our own function called `correcting_function` that will recalibrate a number to be 10% higher than it currently is. 
+
+```{r}
+correcting_function <- function(hl) {
+  hl*1.1
+}
+```
+
+We name our function by assigning our `function()` call to a variable (`correcting_function`). 
+Inside the parentheses of `function()` we list the names of the input variables we will use in the body of our function (everything between the {}). 
+In our function, let's have the user input one variable which in the body we'll call `hl`, short for hindfoot length. 
+
+In the body of the function, we can include as many lines of code as we want. 
+R will return the output of the very last line of code as a default. 
+
+Above, the user will enter in a value for `hl`. 
+When the function is run, it runs through the lines of code in the body (so hl * 1.1) and returns the output of the final line. 
+
+Let's try entering in one number (50):
+
+```{r}
+correcting_function(50)
+```
+
+We can see the output is 55. 
+
+How can we run this function on all values of `hindfoot_length`?
+We can use something called an apply statement. 
+Specifically we'll use `sapply`. 
+The first argument in `sapply` is the vector you wish to apply your function to and the second argument is the function you wish to use. 
+
+Let's apply the function `correcting_function` to all values of `hindfoot_length` and save it as a new column in our `surveys` data.frame called `hindfoot_length_corrected`:
+
+```{r}
+surveys$hindfoot_length_corrected <- sapply(surveys$hindfoot_length, correcting_function)
+head(surveys)
+```
+
 ## Plotting
 
 Another nice feature about R is that there are many functions built in to plot your data. 
@@ -341,6 +463,18 @@ Let's add more descriptive axis titles, a main title, and color the points blue:
 ```{r}
 plot(surveys$hindfoot_length, surveys$weight, xlab = "hindfoot length (cm)", ylab = "weight (g)", main = "Relationship of hindfoot length to weight in desert creatures", col = "blue")
 ```
+
+This plot currently only lives within R. 
+To save it as a file to your computer, you can use the functions `pdf()` to open a connection to a file on your computer, run whatever plotting code you'd like saved, and `dev.off()` to close the connection to that file. 
+Let's save our scatterplot to our working directory with the title "hindfoot_length_vs_weight_plot.pdf":
+
+```{r}
+pdf("hindfoot_length_vs_weight_plot.pdf")
+plot(surveys$hindfoot_length, surveys$weight, xlab = "hindfoot length (cm)", ylab = "weight (g)", main = "Relationship of hindfoot length to weight in desert creatures", col = "blue")
+dev.off()
+```
+
+If you look in your current working directory, you'll now see the file "hindfoot_length_vs_weight_plot.pdf".
 
 We can also make boxplots easily in R. 
 Let's make a boxplot of the distribution of `hindfoot_length` by sex:
