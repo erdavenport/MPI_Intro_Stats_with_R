@@ -201,13 +201,11 @@ Consider for example the sample mean. This is an estimated parameter that approx
 
   * SE = sqrt(variance/sample size)
 
- **The SE is always expressed in the same units as the measured variable.** This means that we can represent the mean and it's SE as a barplot with whiskers, like so:
-
 ## The null hypothesis and the p-value
 
-In formal hypothesis testing, we start with a well-thought null hypothesis, which is assumed to be true, and an alternative hypothesis, for which we are attempting to validate using our data. The essential point is that a null hypothesis is falsifiable. We reject the null hypothesis (which in practice is often "*nothing varies*" or "*there is no difference between A and B*") when our data indicates that the null hypothesis is sufficiently unlikely. We base our decision each time on a value of a test statistics. If we observe a value of a test statistics that is very unlikely to be observed when the null hypothesis is *true*, we reject the null. In precise terms, **a p-value is an estimate of the probability of observing a value of a test statistics, or a value more extreme than this, when the null hypothesis is true**. You should memorise the last sentence. It is also important to memorise the following two things:
+In formal hypothesis testing, we start with a well-thought null hypothesis, which is assumed to be true, and an alternative hypothesis, for which we are attempting to validate using our data. The essential point is that a null hypothesis is falsifiable. We reject the null hypothesis (which in practice is often "*nothing varies*" or "*there is no difference between A and B*") when our data indicates that the null hypothesis is sufficiently unlikely. We base our decision each time on a value of a test statistics. If we observe a value of a test statistics that is very unlikely to be observed when the null hypothesis is *true*, we reject the null. In precise terms, **a p-value is an estimate of the probability of observing a value of a test statistic, or a value more extreme than this, when the null hypothesis is true**. You should memorise the last sentence. It is also important to memorise the following two things:
 
-  * A p-value is always associated with a value of a test statistics, and does not have a meaning without a test statistics.
+  * A p-value is always associated with a value of a test statistic, and does not have a meaning without a test statistic.
   * If our statistical test does not pass our significance threshold, we fail to reject our null hypothesis, we do not accept it.
 
 Whenever you encounter a p-value, you should know the underlying null expectation and the test statistics used to produce the p-value. This will clarify your logic and help you recognize errors in analysis as well as limits of the statistical tests.
@@ -270,7 +268,7 @@ If we are certain that the variances are equal we can call the classical **Stude
 t.test(iris$Sepal.Width[which(iris$Species=='versicolor')],iris$Sepal.Width[which(iris$Species=='virginica')],var.equal=T)
 ```
 
-As you can see from the output it gives an (nearly) equal result to the Welch test.
+As you can see from the output it gives a (nearly) equal result to the Welch test.
 
 **Exercise**: Spot the differences in the outputs of Student's and Welch's t-tests.
 
@@ -362,7 +360,6 @@ g = g + geom_errorbar(aes(ymin=means-se,ymax=means+se,x=c(1:3)))
 g
 ```
 
-The second error-bar option we will try is plotting the standard error of the ANOVA model. This means that we want to plot the error bars as a function of the pooled error variance we used to test the differences in the means i.e. the residual variance not explained by the model (be sure to state this in the figure legend!). We can get the pooled error variance from our ANOVA output by remembering that Mean Sq = variance.
 
 **Exercise**: Try to spot the residual variance of the model in the table below.
 
