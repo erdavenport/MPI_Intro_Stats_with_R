@@ -470,7 +470,7 @@ Note that the default Pearson's correlation test assumes that *x* and *y* are no
 cor.test(iris$Sepal.Length[which(iris$Species=='setosa')],iris$Petal.Length[which(iris$Species=='setosa')],method='spearman')
 ```
 
-**Exercise**: Explore the correlation of sepal and petal lengths in each three species of the *iris* dataset. Which species shows the most and which shows the least level of correlation? How come can we use Spearman's correlation test for non-normal data?
+**Exercise**: Explore the correlation of sepal and petal lengths in each three species of the *iris* dataset. Which species shows the most and which shows the least level of correlation? How come we can use Spearman's correlation test for non-normal data?
 
 
 ## Regression
